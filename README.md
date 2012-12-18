@@ -13,6 +13,8 @@ To use:
 2. Add a key binding, Click Preferences menu > Key Bindings - User
 
   
-    [     
-    { "keys": ["ctrl+u"], "command": "open_url" }
+    [  
+      { "keys": ["ctrl+u"], "command": "open_url" }  
     ]
+
+That's it.  Just hit the hotkey, Ctrl+U in this case over a URL, like http://google.com and it will open.
