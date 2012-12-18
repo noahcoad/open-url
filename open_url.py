@@ -8,6 +8,8 @@
 #   file   = given the choise to Edit or Run
 #   other  = google it
 #
+# Hosted at: https://github.com/noahcoad/open_url
+#
 # Resources
 # 	Original base code from here, https://gist.github.com/3542836
 # 	API, http://www.sublimetext.com/docs/2/api_reference.html
