@@ -1,5 +1,9 @@
 #
-# Opens a selected url/file/folder (or url under the cursor)
+# title:     open_url
+# desc:      Opens a selected url/file/folder (or url under the cursor)
+# platform:  a Package plugin for Sublime Text 2
+# hosted:    https://github.com/noahcoad/open_url
+# created:   Noah Coad, 12/18/2012
 #
 # Put the cursor under a url or file/folder without space in it, or select some text
 # Run command and it will either be:
@@ -7,8 +11,6 @@
 #   folder = open in explorer/finder
 #   file   = given the choise to Edit or Run
 #   other  = google it
-#
-# Hosted at: https://github.com/noahcoad/open_url
 #
 # Resources
 # 	Original base code from here, https://gist.github.com/3542836
