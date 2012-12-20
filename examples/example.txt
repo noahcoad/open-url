@@ -1,10 +1,10 @@
 
-	open_url Sublime Package
+	open-url Sublime Package
 
 This is just a plain text file
   http://www.google.com/reader/view/
   google.com/reader/view/
   C:\Temp\tmp.txt
   example.html example.py
-  ../open_url.py
+  ../open-url.py
   c:\Windows\Downloaded Program Files

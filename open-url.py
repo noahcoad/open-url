@@ -1,8 +1,8 @@
 #
-# title:     open_url
+# title:     open-url
 # desc:      Opens a selected url/file/folder (or url under the cursor)
 # platform:  a Package plugin for Sublime Text 2
-# hosted:    https://github.com/noahcoad/open_url
+# hosted:    https://github.com/noahcoad/open-url
 # created:   Noah Coad, 12/18/2012
 #
 # Put the cursor under a url or file/folder without space in it, or select some text
