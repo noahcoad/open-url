@@ -35,18 +35,18 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		url = self.view.substr(sublime.Region(start, end))
 
 		# strip quotes if quoted
-		if url.startswith("\"") & url.endswith("\""):
+		if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")):
 			url = url[1:-1]
 
-		# find the relative path to the current file
+		# find the relative path to the current file 'google.com'
 		try:
 			relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
 		except TypeError:
 			relative_path = url
 
 		# debug info
-		print "URL : " + url
-		print "relative_path : " + relative_path
+		print("URL : " + url)
+		print("relative_path : " + relative_path)
 
 		# if this is a directory, show it (absolute or relative)
 		# if it is a path to a file, open the file in sublime (absolute or relative)
@@ -64,14 +64,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		elif os.path.exists(relative_path):
 			self.choose_action(relative_path)
 		
-		elif re.search(r"\w[^\s]*\.(?:com|co|uk|gov|edu|tv|net|org|tel|me|us|mobi|es|io)[^\s]*\Z", url):
-			if not "://" in url:
-				url = "http://" + url
-			webbrowser.open_new_tab(url)
-		
 		else:
-			url = "http://google.com/#q=" + urllib.quote(url, '')
-			webbrowser.open_new_tab(url)
+			if "://" in url:
+				webbrowser.open_new_tab(url)
+			elif re.search(r"\w[^\s]*\.(?:com|co|uk|gov|edu|tv|net|org|tel|me|us|mobi|es|io)[^\s]*\Z", url):
+				if not "://" in url:
+					url = "http://" + url
+				webbrowser.open_new_tab(url)
+			else:
+				url = "http://google.com/#q=" + urllib.quote(url, '')
+				webbrowser.open_new_tab(url)
 
 	# for files, as the user if they's like to edit or run the file
 	def choose_action(self, file):
