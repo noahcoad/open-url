@@ -39,7 +39,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			url = url[1:-1]
 
 		# find the relative path to the current file
-		relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
+		try:
+			relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
+		except TypeError:
+			relative_path = url
 
 		# debug info
 		print "URL : " + url
@@ -77,7 +80,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	# shell execution must be on another thread to keep Sublime from locking if it's a sublime file
 	def run_me(self, file):
-		os.system(file)
+		os.system("\"" + file + "\"")
 
 	# for files, either open the file for editing in sublime, or shell execute the file
 	def select_done(self, index):
