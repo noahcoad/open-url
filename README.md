@@ -18,3 +18,16 @@ To use:
     ]
 
 That's it.  Just hit the hotkey, Ctrl+U in this case over a URL, like http://google.com and it will open.
+
+<!-- copy and paste. Modify height and width if desired. -->
+       <object id="scPlayer"  width="640" height="448" type="application/x-shockwave-flash" data="http://content.screencast.com/users/NoahCoad/folders/Blog/media/5d2a78f7-f527-409b-87d8-e7711a45ed8e/scplayer.swf" >
+<param name="movie" value="http://content.screencast.com/users/NoahCoad/folders/Blog/media/5d2a78f7-f527-409b-87d8-e7711a45ed8e/scplayer.swf" />
+<param name="quality" value="high" />
+<param name="bgcolor" value="#FFFFFF" />
+<param name="flashVars" value="thumb=http://content.screencast.com/users/NoahCoad/folders/Blog/media/5d2a78f7-f527-409b-87d8-e7711a45ed8e/FirstFrame.png&containerwidth=640&containerheight=448&autohide=true&autostart=false&loop=false&showendscreen=true&showsearch=false&showstartscreen=true&tocdoc=left&xmp=sc.xmp&analytics=UA-28815156-1&content=http://content.screencast.com/users/NoahCoad/folders/Blog/media/5d2a78f7-f527-409b-87d8-e7711a45ed8e/open_url.mp4&blurover=false" />
+<param name="allowFullScreen" value="true" />
+<param name="scale" value="showall" />
+<param name="allowScriptAccess" value="always" />
+<param name="base" value="http://content.screencast.com/users/NoahCoad/folders/Blog/media/5d2a78f7-f527-409b-87d8-e7711a45ed8e/" />
+<iframe type="text/html" frameborder="0" scrolling="no" style="overflow:hidden;" src="http://www.screencast.com/users/NoahCoad/folders/Blog/media/5d2a78f7-f527-409b-87d8-e7711a45ed8e/embed" height="448" width="640" ></iframe>
+</object> 
