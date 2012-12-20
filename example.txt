@@ -1,0 +1,9 @@
+
+	open_url Sublime Text 2 Package
+
+Place cursor under these (or select) and hit ctrl+u to open
+  http://www.google.com/reader/view/
+  google.com/reader/view/
+  C:\Temp\tmp.txt  example.py
+  ../Default/Preferences.sublime-settings
+  c:\Windows\Downloaded Program Files

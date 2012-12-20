@@ -1,42 +1,8 @@
-#
-# title:     open-url
-# desc:      Opens a selected url/file/folder (or url under the cursor)
-# platform:  a Package plugin for Sublime Text 2
-# hosted:    https://github.com/noahcoad/open-url
-# created:   Noah Coad, 12/18/2012
-#
-# Put the cursor under a url or file/folder without space in it, or select some text
-# Run command and it will either be:
-#   URLs   = open in browser
-#   folder = open in explorer/finder
-#   file   = given the choise to Edit or Run
-#   other  = google it
-#
-# Resources
-# 	Original base code from here, https://gist.github.com/3542836
-# 	API, http://www.sublimetext.com/docs/2/api_reference.html
-# 	os, http://docs.python.org/3/library/os.html
-# 	os.path, http://docs.python.org/3/library/os.path.html#module-os.path
-# 	plugins in general, http://net.tutsplus.com/tutorials/python-tutorials/how-to-create-a-sublime-text-2-plugin/
-#
-# Improvements
-#		Active
-#   	open urls from multiple selection
-# 	Done
-# 		for files, show menu to 'edit' or 'run'
-#
-# Test strings
-# 	https://gist.github.com/3542836 noahcoad.com/tools
-# 	google.com c:\temp\test.log c:\booyah c:\temp example.py Context.sublime-menu c:\temp\tmp.bat
-# 	"c:\temp\test.log" C:\Temp\head.txt
+# Open URL opens selected URLs, files, folders, or googles text
+# Hosted at http://github.com/noahcoad/open-url
 
-
-import sublime
-import sublime_plugin
-import webbrowser
-import thread
-import re
-import os
+import sublime, sublime_plugin
+import webbrowser, urllib, thread, re, os
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
 	open_me = ""
