@@ -1,0 +1,5 @@
+Improvement Ideas
+	Open multipe items with a return or carrage return like these:
+	   http://google.com
+	   gmail.com
+	   http://en.wikipedia.org/wiki/Funky_Cold_Medina
