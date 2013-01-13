@@ -1,5 +1,6 @@
 # Open URL opens selected URLs, files, folders, or googles text
 # Hosted at http://github.com/noahcoad/open-url
+# Thanks goes to 
 
 import sublime, sublime_plugin
 import webbrowser, urllib, thread, re, os

@@ -17,4 +17,11 @@ Put the cursor under or select a url, file, folder, or text and run command.
 * file   = choice to Edit or Run, like ~/.bashrc
 * other  = google it, any text
 
+Here are ways you can run the command:
+
+* Ctrl+U
+* Right-Click, 'Open URL' from context menu
+* Ctrl+Shift+P, 'Open URL' from list of ST2 commands
+* Alt + Double-Click (opens word/url only)
+
 Watch a little 1 min [video demo](http://www.screencast.com/t/AmuNuwqOfg).
