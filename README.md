@@ -24,7 +24,7 @@ Ways to run the command:
 * Ctrl+Shift+P, 'Open URL' from list of ST2 commands
 * Alt + Double-Click (opens word/url only)
 
-Watch a little 1 min [video demo](http://www.screencast.com/t/AmuNuwqOfg).
+**Watch a little 1 min [video demo](http://www.screencast.com/t/AmuNuwqOfg).**
 
 ## Credits
 Thanks goes to peterc for starting [a forum thread](http://www.sublimetext.com/forum/viewtopic.php?f=2&t=4243) about this topic and KatsuomiK for [his gist](https://gist.github.com/3542836) that was the start of this plugin.
