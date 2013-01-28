@@ -1,9 +1,11 @@
 
 	open_url Sublime Text 2 Package
 
-Place cursor under these (or select) and hit ctrl+u to open
-  http://www.google.com/reader/view/
-  google.com/reader/view/
-  C:\Temp\tmp.txt  example.py
-  ../Default/Preferences.sublime-settings
-  c:\Windows\Downloaded Program Files
+Place cursor under these (or select the text),
+the hit ctrl+u to open, or right-click for context menu, or alt+double-click
+
+http://www.google.com/reader/view/
+google.com/reader/view/
+C:\Temp\tmp.txt  example.py
+../Default/Preferences.sublime-settings
+c:\Program Files\Internet Explorer
