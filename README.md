@@ -19,10 +19,10 @@ Put the cursor under or select a url, file, folder, or text and run command.
 
 Ways to run the command:
 
-* Ctrl+U
-* Right-Click, 'Open URL' from context menu
-* Ctrl+Shift+P, 'Open URL' from list of ST2 commands
-* Alt + Double-Click (opens word/url only)
+* ctrl+u
+* right-click > 'Open URL' (from context menu)
+* ctrl+shift+p > 'Open URL' (from list of ST2 commands)
+* alt + double-click (opens what's under the cursor, does not open text selection)
 
 **Watch a little 1 min [video demo](http://www.screencast.com/t/AmuNuwqOfg).**
 
