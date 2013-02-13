@@ -4,9 +4,13 @@
 import sublime, sublime_plugin
 import webbrowser, urllib, thread, re, os
 
+sets_name = "open_url.sublime-settings"
+
+config = sublime.load_settings(sets_name)
+
 class OpenUrlCommand(sublime_plugin.TextCommand):
 	open_me = ""
-
+   
 	def run(self, edit):
 		s = self.view.sel()[0]
 
@@ -78,7 +82,18 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	# for files, as the user if they's like to edit or run the file
 	def choose_action(self, file):
 		self.open_me = file
-		sublime.active_window().show_quick_panel(["Edit", "Run"], self.select_done)
+		action = 'menu'
+		for auto in config.get('autoactions'):
+			for ending in auto['endswith']:
+				if (file.endswith(ending)):
+					action = auto['action']
+					break
+		if action == 'menu':
+			sublime.active_window().show_quick_panel(["Edit", "Run"], self.select_done)
+		elif action == 'edit':
+			self.select_done(0)
+		elif action == 'run':
+			self.select_done(1)
 
 	# shell execution must be on another thread to keep Sublime from locking if it's a sublime file
 	def run_me(self, file):
@@ -90,3 +105,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.view.window().open_file(self.open_me)
 		elif index == 1:
 			thread.start_new_thread(self.run_me, (self.open_me,))
+
+# p.s. Yes, I'm using hard tabs for indentation.  bite me
+# set tabs to whatever level of indentation you like in your editor 
+# for crying out loud, at least they're consistent here, and use 
+# the ST2 command "Indentation: Convert to Spaces" will convert 
+# if you really need to be part of the 'soft tabs only' crowd

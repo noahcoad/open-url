@@ -1,5 +1,21 @@
-Improvement Ideas
-	Open multipe items with a return or carrage return like these:
-	   http://google.com
-	   gmail.com
-	   http://en.wikipedia.org/wiki/Funky_Cold_Medina
+bugs
+	path not opening in MacOS, like /bin
+	
+improvement ideas
+	backlog
+		Open multipe items with a return or carrage return like these:
+			http://google.com
+			gmail.com
+			http://en.wikipedia.org/wiki/Funky_Cold_Medina
+		aliases
+			[myfile] somewhere in the file # Open this [myfile] = c:\asdasdasd
+		files with spaced but in quotes don't require selecting
+			"c:\temp\folder w space\file w space.txt" opens
+	implemented
+		setting to always run or always edit certain files
+			"endswith", ".sublime-project", "run"
+			"endswith", ".sln", "run"
+			"endswith", ".txt", "edit"
+
+code snippets for debugging
+	s = sublime.load_settings("open_url.sublime-settings")
