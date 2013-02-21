@@ -3,6 +3,7 @@ bugs
 	
 improvement ideas
 	backlog
+		add run with
 		Open multipe items with a return or carrage return like these:
 			http://google.com
 			gmail.com

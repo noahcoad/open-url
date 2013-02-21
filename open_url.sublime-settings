@@ -2,6 +2,7 @@
 	"autoactions": [
 		{ "endswith": [".sublime-project"], "action": "run" },
 		{ "endswith": [".sln"], "action": "run" },
-		{ "endswith": [".txt"], "action": "edit" }
+		{ "endswith": [".txt"], "action": "edit" },
+		{ "endswith": [".exe"], "action": "run" }
 	]
 }
