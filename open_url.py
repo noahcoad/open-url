@@ -2,7 +2,7 @@
 # Hosted at http://github.com/noahcoad/open-url
 
 import sublime, sublime_plugin
-import webbrowser, urllib, thread, re, os
+import webbrowser, urllib, thread, re, os, subprocess
 
 sets_name = "open_url.sublime-settings"
 
@@ -10,6 +10,7 @@ config = sublime.load_settings(sets_name)
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
 	open_me = ""
+	open_with = None
    
 	def run(self, edit):
 		s = self.view.sel()[0]
@@ -46,7 +47,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		try:
 			relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
 		except TypeError:
-			relative_path = url
+			relative_path = None
 
 		# debug info
 		print("URL : " + url)
@@ -59,13 +60,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if os.path.isdir(url):
 			os.startfile(url)
 		
-		elif os.path.isdir(relative_path):
+		elif relative_path and os.path.isdir(relative_path):
 			os.startfile(relative_path)
 		
 		elif os.path.exists(url):
 			self.choose_action(url)
 		
-		elif os.path.exists(relative_path):
+		elif relative_path and os.path.exists(relative_path):
 			self.choose_action(relative_path)
 		
 		else:
@@ -87,6 +88,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			for ending in auto['endswith']:
 				if (file.endswith(ending)):
 					action = auto['action']
+					if ('openwith' in auto):
+						self.open_with = auto['openwith']
+					print(self.open_with)
 					break
 		if action == 'menu':
 			sublime.active_window().show_quick_panel(["Edit", "Run"], self.select_done)
@@ -96,15 +100,18 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.select_done(1)
 
 	# shell execution must be on another thread to keep Sublime from locking if it's a sublime file
-	def run_me(self, file):
-		os.system("\"" + file + "\"")
+	def run_me(self, file, open_with):
+		if open_with:
+			subprocess.call([open_with, file], shell = True)
+		else:
+			os.system("\"" + file + "\"")
 
 	# for files, either open the file for editing in sublime, or shell execute the file
 	def select_done(self, index):
 		if index == 0:
 			self.view.window().open_file(self.open_me)
 		elif index == 1:
-			thread.start_new_thread(self.run_me, (self.open_me,))
+			thread.start_new_thread(self.run_me, (self.open_me, self.open_with))
 
 # p.s. Yes, I'm using hard tabs for indentation.  bite me
 # set tabs to whatever level of indentation you like in your editor 

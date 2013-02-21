@@ -26,8 +26,13 @@ Ways to run the command:
 
 **Watch a little 1 min [video demo](http://www.screencast.com/t/AmuNuwqOfg).**
 
-## Configuration
-* Default Actions: You can set specific file extensions to be edit or run without being prompted with a menu.  The default has been set for .sublime-project .txt and a few other files types.  Open open_url.sublime-settings to change and add your own.
+## Options
+### Default Actions
+You can set specific file extensions to be edit or run without being prompted with a menu.  The default has been set for .sublime-project .txt and a few other files types.  Open open_url.sublime-settings to change and add your own.
+
+* If the action is 'edit' it will be opened for editing in Sublime
+* If the action is 'run' it will be executed by the OS
+* You can add an 'openwith': 'myprogram.exe' to the end of an 'endswith' line to specify a specific a program to open the file with.  In this case the shell will execute the openwith program and the selection will be a parameter.
 
 ## Credits
 Thanks goes to peterc for starting [a forum thread](http://www.sublimetext.com/forum/viewtopic.php?f=2&t=4243) about this topic and KatsuomiK for [his gist](https://gist.github.com/3542836) that was the start of this plugin.

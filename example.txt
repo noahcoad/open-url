@@ -9,3 +9,4 @@ google.com/reader/view/
 C:\Temp\tmp.txt  example.py
 ../Default/Preferences.sublime-settings
 c:\Program Files\Internet Explorer
+C:\Noah\Projects\people\ChrisFritchie\ChrisFritchie.sublime-project
