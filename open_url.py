@@ -4,14 +4,13 @@
 import sublime, sublime_plugin
 import webbrowser, urllib, thread, re, os, subprocess
 
-sets_name = "open_url.sublime-settings"
-
-config = sublime.load_settings(sets_name)
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
 	open_me = ""
 	open_with = None
-   
+	debug = False
+	config = sublime.load_settings("open_url.sublime-settings")
+
 	def run(self, edit):
 		s = self.view.sel()[0]
 
@@ -50,8 +49,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			relative_path = None
 
 		# debug info
-		print("URL : " + url)
-		print("relative_path : " + relative_path)
+		if self.debug:
+			print("open_url debug : ", [url, relative_path])
 
 		# if this is a directory, show it (absolute or relative)
 		# if it is a path to a file, open the file in sublime (absolute or relative)
@@ -84,13 +83,12 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	def choose_action(self, file):
 		self.open_me = file
 		action = 'menu'
-		for auto in config.get('autoactions'):
+		for auto in self.config.get('autoactions'):
 			for ending in auto['endswith']:
 				if (file.endswith(ending)):
 					action = auto['action']
 					if ('openwith' in auto):
 						self.open_with = auto['openwith']
-					print(self.open_with)
 					break
 		if action == 'menu':
 			sublime.active_window().show_quick_panel(["Edit", "Run"], self.select_done)

@@ -1,9 +1,12 @@
+hosted at: https://github.com/noahcoad/open-url
+
 bugs
 	path not opening in MacOS, like /bin
 	
 improvement ideas
 	backlog
-		add run with
+		look in project for matching file name (relative path not required), needs sublime text 3, http://www.sublimetext.com/blog/articles/sublime-text-3-beta
+		add run with, lets user pick an app to run a file with instead of just the shell
 		Open multipe items with a return or carrage return like these:
 			http://google.com
 			gmail.com

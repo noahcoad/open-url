@@ -1,2 +1,2 @@
-print('boogy woogy')
-input()
+# print('boogy woogy')
+# input()
