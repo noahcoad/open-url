@@ -67,9 +67,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		end = s.b
 
 		# if nothing is selected, expand selection to nearest terminators
-		if (start == end):
+		if (start == end): 
 			view_size = self.view.size()
-			terminator = list('\t\"\'><, ')
+			terminator = list('\t\"\'><, []()')
 
 			# move the selection back to the start of the url
 			while (start > 0
