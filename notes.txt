@@ -5,6 +5,8 @@ bugs
 	
 improvement ideas
 	backlog
+		bug: open_url is a registered command, need to find another command name
+		scan to see if cursor is inside quotes to a path that exists, "c:\temp\folder w space\file w space.txt" opens		
 		look in project for matching file name (relative path not required), needs sublime text 3, http://www.sublimetext.com/blog/articles/sublime-text-3-beta
 		add run with, lets user pick an app to run a file with instead of just the shell
 		Open multipe items with a return or carrage return like these:
@@ -13,8 +15,6 @@ improvement ideas
 			http://en.wikipedia.org/wiki/Funky_Cold_Medina
 		aliases
 			[myfile] somewhere in the file # Open this [myfile] = c:\asdasdasd
-		files with spaced but in quotes don't require selecting
-			"c:\temp\folder w space\file w space.txt" opens
 	implemented
 		setting to always run or always edit certain files
 			"endswith", ".sublime-project", "run"
@@ -23,3 +23,8 @@ improvement ideas
 
 code snippets for debugging
 	s = sublime.load_settings("open_url.sublime-settings")
+
+references
+	commands
+		http://docs.sublimetext.info/en/latest/reference/commands.html
+		http://www.sublimetext.com/docs/commands

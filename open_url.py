@@ -4,6 +4,8 @@
 import sublime, sublime_plugin
 import webbrowser, urllib, thread, re, os, subprocess
 
+# self.window.run_command('open_url',{'url': 'http://google.com'})
+# self.window.run_command('browser_url',{'url': 'http://google.com'})
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
 	open_me = ""
@@ -11,7 +13,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	debug = False
 	config = sublime.load_settings("open_url.sublime-settings")
 
-	def run(self, edit):
+	def run(self, edit, url=None):
 		s = self.view.sel()[0]
 
 		# expand selection to possible URL
