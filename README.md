@@ -7,7 +7,8 @@ Opens URLs, files, folders, or googles text under the cursor or in a text select
 Any one of these:
 * Install using the [Sublime Package Manager](http://wbond.net/sublime_packages/package_control)
 * Copy the open_url folder in your Packages directory.  Click Preferences menu > Browse Packages...
-* Clone into your Packages folder, from the Packages folder run: git clone https://github.com/noahcoad/open-url.git
+* Clone into your Packages folder, from the Packages folder run:  
+```git clone https://github.com/noahcoad/open-url.git```
 
 ## How to Use
 Put the cursor under or select a url, file, folder, or text and run command.
@@ -36,3 +37,6 @@ You can set specific file extensions to be edit or run without being prompted wi
 
 ## Credits
 Thanks goes to peterc for starting [a forum thread](http://www.sublimetext.com/forum/viewtopic.php?f=2&t=4243) about this topic and KatsuomiK for [his gist](https://gist.github.com/3542836) that was the start of this plugin.
+
+## Author
+[@noahcoad](http://twitter.com/noahcoad) writes software for the heck of it and to make life just a little more efficient.  You may also like this [Google Spell Check](https://github.com/noahcoad/google-spell-check) sublime package.
