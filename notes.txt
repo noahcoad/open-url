@@ -1,7 +1,10 @@
 hosted at: https://github.com/noahcoad/open-url
 
 bugs
-	path not opening in MacOS, like /bin
+	known
+		path not opening in MacOS, like /bin
+	fixed
+		open_url is evidently a poorly documented but built-in sublime command, so this is overriding some default sublime features like pulling up the Documentation from the help menu
 	
 improvement ideas
 	backlog

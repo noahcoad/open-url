@@ -4,41 +4,18 @@
 import sublime, sublime_plugin
 import webbrowser, urllib, thread, re, os, subprocess
 
-# self.window.run_command('open_url',{'url': 'http://google.com'})
-# self.window.run_command('browser_url',{'url': 'http://google.com'})
-
 class OpenUrlCommand(sublime_plugin.TextCommand):
 	open_me = ""
 	open_with = None
 	debug = False
 	config = sublime.load_settings("open_url.sublime-settings")
 
-	def run(self, edit, url=None):
-		s = self.view.sel()[0]
+	def run(self, edit=None, url=None):
 
-		# expand selection to possible URL
-		start = s.a
-		end = s.b
-
-		# if nothing is selected, expand selection to nearest terminators
-		if (start == end):
-			view_size = self.view.size()
-			terminator = ['\t', ' ', '\"', '\'','>','<',',']
-
-			# move the selection back to the start of the url
-			while (start > 0
-					and not self.view.substr(start - 1) in terminator
-					and self.view.classify(start) & sublime.CLASS_LINE_START == 0):
-				start -= 1
-
-			# move end of selection forward to the end of the url
-			while (end < view_size
-					and not self.view.substr(end) in terminator
-					and self.view.classify(end) & sublime.CLASS_LINE_END == 0):
-				end += 1
-
-		# grab the URL
-		url = self.view.substr(sublime.Region(start, end))
+		# sublime text has its own open_url command used for things like Help menu > Documentation
+		# so if a url is specified, then open it instead of getting text from the edit window
+		if url is None:
+			url = self.selection()
 
 		# strip quotes if quoted
 		if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")):
@@ -81,6 +58,34 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 				url = "http://google.com/#q=" + urllib.quote(url, '')
 				webbrowser.open_new_tab(url)
 
+	# pulls the current selection or url under the cursor
+	def selection(self):
+		s = self.view.sel()[0]
+
+		# expand selection to possible URL
+		start = s.a
+		end = s.b
+
+		# if nothing is selected, expand selection to nearest terminators
+		if (start == end):
+			view_size = self.view.size()
+			terminator = list('\t\"\'><, ')
+
+			# move the selection back to the start of the url
+			while (start > 0
+					and not self.view.substr(start - 1) in terminator
+					and self.view.classify(start) & sublime.CLASS_LINE_START == 0):
+				start -= 1
+
+			# move end of selection forward to the end of the url
+			while (end < view_size
+					and not self.view.substr(end) in terminator
+					and self.view.classify(end) & sublime.CLASS_LINE_END == 0):
+				end += 1
+
+		# grab the URL
+		return self.view.substr(sublime.Region(start, end))
+
 	# for files, as the user if they's like to edit or run the file
 	def choose_action(self, file):
 		self.open_me = file
@@ -116,5 +121,5 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 # p.s. Yes, I'm using hard tabs for indentation.  bite me
 # set tabs to whatever level of indentation you like in your editor 
 # for crying out loud, at least they're consistent here, and use 
-# the ST2 command "Indentation: Convert to Spaces" will convert 
-# if you really need to be part of the 'soft tabs only' crowd
+# the ST2 command "Indentation: Convert to Spaces", which will convert
+# to spaces if you really need to be part of the 'soft tabs only' crowd
