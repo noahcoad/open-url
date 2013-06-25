@@ -1,4 +1,4 @@
-# open_url Sublime Package
+# Open URL a Sublime Text 2 Package
 
 ## Description
 Opens URLs, files, folders, or googles text under the cursor or in a text selection.
