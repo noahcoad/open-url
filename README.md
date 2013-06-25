@@ -35,8 +35,9 @@ You can set specific file extensions to be edit or run without being prompted wi
 * If the action is 'run' it will be executed by the OS
 * You can add an 'openwith': 'myprogram.exe' to the end of an 'endswith' line to specify a specific a program to open the file with.  In this case the shell will execute the openwith program and the selection will be a parameter.
 
-## Credits
-Thanks goes to peterc for starting [a forum thread](http://www.sublimetext.com/forum/viewtopic.php?f=2&t=4243) about this topic and KatsuomiK for [his gist](https://gist.github.com/3542836) that was the start of this plugin.
+## Finally
+See also: You may like this [Google Spell Check](https://github.com/noahcoad/google-spell-check) sublime package.
 
-## Author
-[@noahcoad](http://twitter.com/noahcoad) writes software for the heck of it and to make life just a little more efficient.  You may also like this [Google Spell Check](https://github.com/noahcoad/google-spell-check) sublime package.
+Credits: Thanks goes to peterc for starting [a forum thread](http://www.sublimetext.com/forum/viewtopic.php?f=2&t=4243) about this topic and KatsuomiK for [his gist](https://gist.github.com/3542836) that was the start of this plugin.
+
+Author: [@noahcoad](http://twitter.com/noahcoad) writes software for the heck of it and to make life just a little more efficient.
