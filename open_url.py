@@ -43,6 +43,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		
 		elif os.path.exists(url):
 			self.choose_action(url)
+
+		elif os.path.exists(os.path.expandvars(url)):
+			self.choose_action(os.path.expandvars(url))
 		
 		elif relative_path and os.path.exists(relative_path):
 			self.choose_action(relative_path)
@@ -122,4 +125,4 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 # set tabs to whatever level of indentation you like in your editor 
 # for crying out loud, at least they're consistent here, and use 
 # the ST2 command "Indentation: Convert to Spaces", which will convert
-# to spaces if you really need to be part of the 'soft tabs only' crowd
+# to spaces if you really need to be part of the 'soft tabs only' crowd =)
