@@ -3,12 +3,14 @@ hosted at: https://github.com/noahcoad/open-url
 bugs
 	known
 		path not opening in MacOS, like /bin
+		not detecting 'ends with' if url is in quotes
 	fixed
+		whitespacing on edges prevent detection of url type
 		open_url is evidently a poorly documented but built-in sublime command, so this is overriding some default sublime features like pulling up the Documentation from the help menu
 	
 improvement ideas
 	backlog
-		bug: open_url is a registered command, need to find another command name
+		custom opener handlers, like registering a regex with a way to handle it, like 'bug 123' will open in work item tracking system
 		scan to see if cursor is inside quotes to a path that exists, "c:\temp\folder w space\file w space.txt" opens		
 		look in project for matching file name (relative path not required), needs sublime text 3, http://www.sublimetext.com/blog/articles/sublime-text-3-beta
 		add run with, lets user pick an app to run a file with instead of just the shell
@@ -18,7 +20,8 @@ improvement ideas
 			http://en.wikipedia.org/wiki/Funky_Cold_Medina
 		aliases
 			[myfile] somewhere in the file # Open this [myfile] = c:\asdasdasd
-	implemented
+	implemented/fixed
+		bug: open_url is a registered command, need to find another command name
 		setting to always run or always edit certain files
 			"endswith", ".sublime-project", "run"
 			"endswith", ".sln", "run"

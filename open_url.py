@@ -87,7 +87,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 				end += 1
 
 		# grab the URL
-		return self.view.substr(sublime.Region(start, end))
+		return self.view.substr(sublime.Region(start, end)).strip()
 
 	# for files, as the user if they's like to edit or run the file
 	def choose_action(self, file):
