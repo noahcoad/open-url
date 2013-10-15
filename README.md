@@ -8,7 +8,7 @@ Sublime Text 3 version in https://github.com/noahcoad/open-url/tree/st3
 ## Install
 Any one of these:
 * Install using the [Sublime Package Manager](http://wbond.net/sublime_packages/package_control)
-* Copy the open_url folder in your Packages directory.  Click Preferences menu > Browse Packages...
+* Download and unpack into your sublime packages folder a version for: [Sublime Text 2](https://github.com/noahcoad/open-url/archive/st2.zip) or [Sublime Text 3](https://github.com/noahcoad/open-url/archive/st3.zip)
 * Clone into your Packages folder, from the Packages folder run:  
 Sublime Text 2: ```git clone git clone --branch st2 https://github.com/noahcoad/open-url.git```  
 Sublime Text 3: ```git clone git clone --branch st3 https://github.com/noahcoad/open-url.git```  
