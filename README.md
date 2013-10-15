@@ -10,8 +10,8 @@ Any one of these:
 * Install using the [Sublime Package Manager](http://wbond.net/sublime_packages/package_control)
 * Copy the open_url folder in your Packages directory.  Click Preferences menu > Browse Packages...
 * Clone into your Packages folder, from the Packages folder run:  
-Sublime Text 2: ```git clone git clone --branch st2 https://github.com/noahcoad/open-url.git```
-Sublime Text 3: ```git clone git clone --branch st3 https://github.com/noahcoad/open-url.git```
+Sublime Text 2: ```git clone git clone --branch st2 https://github.com/noahcoad/open-url.git```  
+Sublime Text 3: ```git clone git clone --branch st3 https://github.com/noahcoad/open-url.git```  
 
 ## How to Use
 Put the cursor under or select a url, file, folder, or text and run command.
