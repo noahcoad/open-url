@@ -1,7 +1,9 @@
-// create an open_url.sublime-settings file in your User folder to override or add to these
+// to specify you're own, either edit this file, or copy/paste to
+// open_url.sublime-settings file in your User folder
+// if there is an open_url.sublime-settings in the User folder, Sublime ignores this file
 {
 	"autoactions": [
-		{ "endswith": [".exe", ".com"], "action": "run" },
-		{ "endswith": [".txt", ".config", ".md", ".log"], "action": "edit" }
+		{ "endswith": [".exe", ".com", ".sublime-project"], "action": "run" },
+		{ "endswith": [".txt", ".config", ".md", ".log", ".sublime-settings"], "action": "edit" }
 	]
 }

@@ -2,13 +2,12 @@
 # Hosted at http://github.com/noahcoad/open-url
 
 import sublime, sublime_plugin
-import webbrowser, urllib, thread, re, os, subprocess
+import webbrowser, urllib, urllib.parse, threading, re, os, subprocess
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
 	open_me = ""
 	open_with = None
 	debug = False
-	config = sublime.load_settings("open_url.sublime-settings")
 
 	def run(self, edit=None, url=None):
 
@@ -58,7 +57,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 					url = "http://" + url
 				webbrowser.open_new_tab(url)
 			else:
-				url = "http://google.com/#q=" + urllib.quote(url, '')
+				url = "http://google.com/#q=" + urllib.parse.quote(url, '')
 				webbrowser.open_new_tab(url)
 
 	# pulls the current selection or url under the cursor
@@ -93,7 +92,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	def choose_action(self, file):
 		self.open_me = file
 		action = 'menu'
-		for auto in self.config.get('autoactions'):
+		config = sublime.load_settings("open_url.sublime-settings")
+		for auto in config.get('autoactions'):
 			for ending in auto['endswith']:
 				if (file.endswith(ending)):
 					action = auto['action']
@@ -119,7 +119,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if index == 0:
 			self.view.window().open_file(self.open_me)
 		elif index == 1:
-			thread.start_new_thread(self.run_me, (self.open_me, self.open_with))
+			threading.Thread(target=self.run_me, args=(self.open_me, self.open_with)).start()
 
 # p.s. Yes, I'm using hard tabs for indentation.  bite me
 # set tabs to whatever level of indentation you like in your editor 
