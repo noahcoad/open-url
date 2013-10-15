@@ -1,14 +1,17 @@
-# Open URL a Sublime Text 2 Package
+# Open URL a Sublime Text Package
 
 ## Description
-Opens URLs, files, folders, or googles text under the cursor or in a text selection.
+Opens URLs, files, folders, or googles text under the cursor or in a text selection.  
+Sublime Text 2 version in https://github.com/noahcoad/open-url/tree/st2  
+Sublime Text 3 version in https://github.com/noahcoad/open-url/tree/st3  
 
 ## Install
 Any one of these:
 * Install using the [Sublime Package Manager](http://wbond.net/sublime_packages/package_control)
 * Copy the open_url folder in your Packages directory.  Click Preferences menu > Browse Packages...
 * Clone into your Packages folder, from the Packages folder run:  
-```git clone https://github.com/noahcoad/open-url.git```
+Sublime Text 2: ```git clone git clone --branch st2 https://github.com/noahcoad/open-url.git```
+Sublime Text 3: ```git clone git clone --branch st3 https://github.com/noahcoad/open-url.git```
 
 ## How to Use
 Put the cursor under or select a url, file, folder, or text and run command.
