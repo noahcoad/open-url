@@ -5,5 +5,11 @@
 	"autoactions": [
 		{ "endswith": [".exe", ".com"], "action": "run" },
 		{ "endswith": [".txt", ".config", ".md", ".log"], "action": "edit" }
-	]
+	],
+	"aliases": {
+		"test": "example.txt",
+		"another": "notes.txt",
+		"system": "C:/Windows/system.ini",
+		"google": "http://www.google.com"
+	}
 }

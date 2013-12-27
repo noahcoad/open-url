@@ -17,7 +17,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# retrieve multiple selections
 		for selection in self.view.sel():
 			# retrieve the text from the selection
-			text = self.view.substr(selection)
+			if selection.empty():
+				text = self.selection()
+			else:
+				text = self.view.substr(selection)
 
 			# split the selected text by whitespace
 			for url in text.split():
@@ -34,6 +37,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 				# debug info
 				if self.debug:
 					print("open_url debug : ", [url, relative_path])
+
+				# check if one or more aliases are present
+				if self.config.has('aliases'):
+					# get all aliases
+					for alias in self.config.get('aliases'):
+						if url == alias:
+							# retrieve alias value
+							url = self.config.get('aliases')[alias]
 
 				# if this is a directory, show it (absolute or relative)
 				# if it is a path to a file, open the file in sublime (absolute or relative)
