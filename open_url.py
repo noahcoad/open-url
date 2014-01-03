@@ -11,70 +11,77 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	config = sublime.load_settings("open_url.sublime-settings")
 
 	def run(self, edit=None, url=None):
-
 		# sublime text has its own open_url command used for things like Help menu > Documentation
 		# so if a url is specified, then open it instead of getting text from the edit window
-		# retrieve multiple selections
-		for selection in self.view.sel():
-			# retrieve the text from the selection
-			if selection.empty():
-				text = self.selection()
-			else:
-				text = self.view.substr(selection)
-
-			# split the selected text by whitespace
-			for url in text.split():
-				# strip quotes if quoted
-				if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")):
-					url = url[1:-1]
-
-				# find the relative path to the current file 'google.com'
-				try:
-					relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
-				except TypeError:
-					relative_path = None
-
-				# debug info
-				if self.debug:
-					print("open_url debug : ", [url, relative_path])
-
-				# check if one or more aliases are present
-				if self.config.has('aliases'):
-					# get all aliases
-					for alias in self.config.get('aliases'):
-						if url == alias:
-							# retrieve alias value
-							url = self.config.get('aliases')[alias]
-
-				# if this is a directory, show it (absolute or relative)
-				# if it is a path to a file, open the file in sublime (absolute or relative)
-				# if it is a URL, open in browser
-				# otherwise google it
-				if os.path.isdir(url):
-					os.startfile(url)
-
-				elif relative_path and os.path.isdir(relative_path):
-					os.startfile(relative_path)
-
-				elif os.path.exists(url):
-					self.choose_action(url)
-
-				elif os.path.exists(os.path.expandvars(url)):
-					self.choose_action(os.path.expandvars(url))
-
-				elif relative_path and os.path.exists(relative_path):
-					self.choose_action(relative_path)
-
+		if url is None:
+			# retrieve multiple selections
+			for selection in self.view.sel():
+				# retrieve the text from the selection
+				if selection.empty():
+					text = self.selection()
 				else:
-					if "://" in url:
-						webbrowser.open_new_tab(url)
-					elif re.search(r"\w[^\s]*\.(?:com|co|uk|gov|edu|tv|net|org|tel|me|us|mobi|es|io)[^\s]*\Z", url):
-						if not "://" in url:
-							url = "http://" + url
-						webbrowser.open_new_tab(url)
-					else:
-						url = "http://google.com/#q=" + urllib.quote(url, '')
-						webbrowser.open_new_tab(url)
+					text = self.view.substr(selection)
+
+				# split the selected text by whitespace
+				for url in text.split():
+					self.parse(url)
+		else:
+			self.parse(url)
+
+	# parse and open url
+	def parse(self, url):
+		# strip quotes if quoted
+		if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")):
+			url = url[1:-1]
+
+		# find the relative path to the current file 'google.com'
+		try:
+			relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
+		except TypeError:
+			relative_path = None
+
+		# debug info
+		if self.debug:
+			print("open_url debug : ", [url, relative_path])
+
+		# check if one or more aliases are present
+		if self.config.has('aliases'):
+			# get all aliases
+			for alias in self.config.get('aliases'):
+				if url == alias:
+					# retrieve alias value
+					url = self.config.get('aliases')[alias]
+
+		# if this is a directory, show it (absolute or relative)
+		# if it is a path to a file, open the file in sublime (absolute or relative)
+		# if it is a URL, open in browser
+		# otherwise google it
+		if os.path.isdir(url):
+			os.startfile(url)
+
+		elif relative_path and os.path.isdir(relative_path):
+			os.startfile(relative_path)
+
+		elif os.path.exists(url):
+			self.choose_action(url)
+
+		elif os.path.exists(os.path.expandvars(url)):
+			self.choose_action(os.path.expandvars(url))
+
+		elif relative_path and os.path.exists(relative_path):
+			self.choose_action(relative_path)
+
+		else:
+			if "://" in url:
+				webbrowser.open_new_tab(url)
+			elif re.search(r"\w[^\s]*\.(?:com|co|uk|gov|edu|tv|net|org|tel|me|us|mobi|es|io)[^\s]*\Z", url):
+				if not "://" in url:
+					url = "http://" + url
+				webbrowser.open_new_tab(url)
+			else:
+				url = "http://google.com/#q=" + urllib.quote(url, '')
+				webbrowser.open_new_tab(url)
+
 
 	# pulls the current selection or url under the cursor
 	def selection(self):
