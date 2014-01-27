@@ -23,8 +23,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# find the relative path to the current file 'google.com'
 		try:
 			relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
-		except TypeError:
+			relative_path = os.path.expanduser(relative_path)
+		except:
 			relative_path = None
+
+		try:
+			url = os.path.expanduser(url)
+		except:
+			pass
 
 		# debug info
 		if self.debug:
@@ -35,20 +41,26 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# if it is a URL, open in browser
 		# otherwise google it
 		if os.path.isdir(url):
-			os.startfile(url)
-		
+			try:
+				os.startfile(url)
+			except: # fix compatible problem in OS X
+				os.system('open "%s"' % url)
+
 		elif relative_path and os.path.isdir(relative_path):
-			os.startfile(relative_path)
-		
+			try:
+				os.startfile(relative_path)
+			except: # fix compatible problem in OS X
+				os.system('open "%s"' % relative_path)
+
 		elif os.path.exists(url):
 			self.choose_action(url)
 
 		elif os.path.exists(os.path.expandvars(url)):
 			self.choose_action(os.path.expandvars(url))
-		
+
 		elif relative_path and os.path.exists(relative_path):
 			self.choose_action(relative_path)
-		
+
 		else:
 			if "://" in url:
 				webbrowser.open_new_tab(url)
@@ -69,7 +81,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		end = s.b
 
 		# if nothing is selected, expand selection to nearest terminators
-		if (start == end): 
+		if (start == end):
 			view_size = self.view.size()
 			terminator = list('\t\"\'><, []()')
 
@@ -122,7 +134,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			threading.Thread(target=self.run_me, args=(self.open_me, self.open_with)).start()
 
 # p.s. Yes, I'm using hard tabs for indentation.  bite me
-# set tabs to whatever level of indentation you like in your editor 
-# for crying out loud, at least they're consistent here, and use 
+# set tabs to whatever level of indentation you like in your editor
+# for crying out loud, at least they're consistent here, and use
 # the ST2 command "Indentation: Convert to Spaces", which will convert
 # to spaces if you really need to be part of the 'soft tabs only' crowd =)
