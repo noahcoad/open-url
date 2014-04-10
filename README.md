@@ -1,9 +1,10 @@
 # Open URL a Sublime Text Package
 
 ## Description
-Opens URLs, files, folders, or googles text under the cursor or in a text selection.  
+Opens URLs, files, folders, or googles text under the cursor or in a text selection with a hotkey, command, or menu item.  
 Sublime Text 2 version in https://github.com/noahcoad/open-url/tree/st2  
 Sublime Text 3 version in https://github.com/noahcoad/open-url/tree/st3  
+Package Control info: https://sublime.wbond.net/packages/Open%20URL  
 
 ## Install
 Any one of these:
@@ -40,6 +41,7 @@ You can set specific file extensions to be edit or run without being prompted wi
 
 ## Update Notices
 * *2013-10-14*, Sublime Text 3 version added.  Updates going forward will only be made to the Sublime Text 3 version of the package.
+* Additional updates are now tracked in this notes.txt file: https://github.com/noahcoad/open-url/blob/st3/notes.txt
 
 ## Finally
 See also: You may like this [Google Spell Check](https://github.com/noahcoad/google-spell-check) sublime package.
