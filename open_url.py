@@ -21,7 +21,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# find the relative path to the current file 'google.com'
 		try:
 			relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
-		except TypeError:
+		except (TypeError, AttributeError):
 			relative_path = None
 
 		# debug info
