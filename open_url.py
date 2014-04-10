@@ -12,13 +12,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	def run(self, edit=None, url=None):
 		# sublime text has its own open_url command used for things like Help menu > Documentation
-		# so if a url is specified, then open it instead of getting text from the edit window
+		# if a url is specified, then open it instead of getting text from the edit window
 		if url is None:
 			# retrieve multiple selections
 			for selection in self.view.sel():
 				# retrieve the text from the selection
 				if selection.empty():
-					text = self.selection()
+					text = self.selection(selection)
 				else:
 					text = self.view.substr(selection)
 
@@ -82,11 +82,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 				url = "http://google.com/#q=" + urllib.quote(url, '')
 				webbrowser.open_new_tab(url)
 
-
-	# pulls the current selection or url under the cursor
-	def selection(self):
-		s = self.view.sel()[0]
-
+	# pulls the selection or url at the specified position
+	def selection(self, s):
 		# expand selection to possible URL
 		start = s.a
 		end = s.b
