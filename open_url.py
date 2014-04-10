@@ -11,12 +11,25 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	config = sublime.load_settings("open_url.sublime-settings")
 
 	def run(self, edit=None, url=None):
-
 		# sublime text has its own open_url command used for things like Help menu > Documentation
-		# so if a url is specified, then open it instead of getting text from the edit window
+		# if a url is specified, then open it instead of getting text from the edit window
 		if url is None:
-			url = self.selection()
+			# retrieve multiple selections
+			for selection in self.view.sel():
+				# retrieve the text from the selection
+				if selection.empty():
+					text = self.selection(selection)
+				else:
+					text = self.view.substr(selection)
 
+				# split the selected text by whitespace
+				for url in text.split():
+					self.parse(url)
+		else:
+			self.parse(url)
+
+	# parse and open url
+	def parse(self, url):
 		# strip quotes if quoted
 		if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")):
 			url = url[1:-1]
@@ -31,25 +44,33 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if self.debug:
 			print("open_url debug : ", [url, relative_path])
 
+		# check if one or more aliases are present
+		if self.config.has('aliases'):
+			# get all aliases
+			for alias in self.config.get('aliases'):
+				if url == alias:
+					# retrieve alias value
+					url = self.config.get('aliases')[alias]
+
 		# if this is a directory, show it (absolute or relative)
 		# if it is a path to a file, open the file in sublime (absolute or relative)
 		# if it is a URL, open in browser
 		# otherwise google it
 		if os.path.isdir(url):
 			os.startfile(url)
-		
+
 		elif relative_path and os.path.isdir(relative_path):
 			os.startfile(relative_path)
-		
+
 		elif os.path.exists(url):
 			self.choose_action(url)
 
 		elif os.path.exists(os.path.expandvars(url)):
 			self.choose_action(os.path.expandvars(url))
-		
+
 		elif relative_path and os.path.exists(relative_path):
 			self.choose_action(relative_path)
-		
+
 		else:
 			if "://" in url:
 				webbrowser.open_new_tab(url)
@@ -61,16 +82,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 				url = "http://google.com/#q=" + urllib.quote(url, '')
 				webbrowser.open_new_tab(url)
 
-	# pulls the current selection or url under the cursor
-	def selection(self):
-		s = self.view.sel()[0]
-
+	# pulls the selection or url at the specified position
+	def selection(self, s):
 		# expand selection to possible URL
 		start = s.a
 		end = s.b
 
 		# if nothing is selected, expand selection to nearest terminators
-		if (start == end): 
+		if (start == end):
 			view_size = self.view.size()
 			terminator = list('\t\"\'><, []()')
 
@@ -122,7 +141,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			thread.start_new_thread(self.run_me, (self.open_me, self.open_with))
 
 # p.s. Yes, I'm using hard tabs for indentation.  bite me
-# set tabs to whatever level of indentation you like in your editor 
-# for crying out loud, at least they're consistent here, and use 
+# set tabs to whatever level of indentation you like in your editor
+# for crying out loud, at least they're consistent here, and use
 # the ST2 command "Indentation: Convert to Spaces", which will convert
 # to spaces if you really need to be part of the 'soft tabs only' crowd =)
