@@ -157,8 +157,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if autoinfo == None or not 'openwith' in autoinfo:
 			if not autoinfo == None and plat == 'Darwin' and 'app' in autoinfo:
 				cmd = "%s -a %s %s" % self.quote((defrun[plat], autoinfo['app'], path))
-			else:
+			elif defrun[platform.system()]:
 				cmd = "%s %s" % self.quote((defrun[platform.system()], path))
+			else:
+				cmd = self.quote(path)
 		else:
 			cmd = "%s %s" % self.quote((autoinfo['openwith'], path))
 
@@ -169,14 +171,17 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			if plat in xterm:
 				cmd = [xterm[plat], '-e', cmd + ('; read -p "Press [ENTER] to continue..."' if pause else '')]
 			elif os.name == 'nt': 
-				cmd = 'cmd /c \"%s\"' % (cmd, ' && pause' if pause else '')
+				# subprocess.call has an odd behavior on windows in that if a parameter contains quotes
+				# it tries to escape the quotes by adding a slash in front of each double quote
+				# so c:\temp\hello.bat if passed to subprocess.call as "c:\temp\hello.bat" will be passed to the OS as \"c:\temp\hello.bat\"
+				# echo Windows doesn't know how to interprit that, so we need to remove the double quotes, 
+				# which breaks files with spaces in their path
+				cmd = ['c:\\windows\\system32\\cmd.exe', '/c', '%s%s' % (cmd.replace('"', ''), ' & pause' if pause else '')]
 			else: raise 'unsupported os';
 		
 		# open the file on a seperate thread
 		if (self.debug): print('cmd: %s' % cmd);
 		self.runapp(cmd)
-		# self.runapp(['/opt/X11/bin/xterm', '-e', '"sleep" "3"'], False)
-		# self.runapp(['/opt/X11/bin/xterm', '-e', 'sh echo "hello"; read -p "pause"'], False)
 
 	# for files, either open the file for editing in sublime, or shell execute the file
 	def select_done(self, idx, autoinfo, path):
