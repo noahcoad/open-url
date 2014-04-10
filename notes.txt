@@ -10,7 +10,11 @@ bugs
 	
 improvement ideas
 	backlog
-		custom opener handlers, like registering a regex with a way to handle it, like 'bug 123' will open in work item tracking system
+		open paths with posix variables
+		swap platform environment variables
+			on PC: $myvar => %myvar%
+			on posix: %myvar% => $myvar
+		custom open handlers, like registering a regex with a way to handle it, like 'bug 123' will open in work item tracking system
 		scan to see if cursor is inside quotes to a path that exists, "c:\temp\folder w space\file w space.txt" opens		
 		look in project for matching file name (relative path not required), needs sublime text 3, http://www.sublimetext.com/blog/articles/sublime-text-3-beta
 		add run with, lets user pick an app to run a file with instead of just the shell
@@ -36,5 +40,14 @@ references
 		http://www.sublimetext.com/docs/commands
 
 updates
-	2013-06-25 01:39am, added [] and () to terminators for markdown support, https://github.com/noahcoad/open-url/pull/9
-	2013-06-25 01:30am, fixed bug, open_url sublime command override affecting Help > Documentation menu Package Control Discover Packages, https://github.com/noahcoad/open-url/issues/7 and https://github.com/noahcoad/open-url/issues/5
+	2013-06-25 01:30am
+		fixed bug, open_url sublime command override affecting Help > Documentation menu Package Control Discover Packages, https://github.com/noahcoad/open-url/issues/7 and https://github.com/noahcoad/open-url/issues/5
+	2013-06-25 01:39am
+		added [] and () to terminators for markdown support, https://github.com/noahcoad/open-url/pull/9
+	2014-04-10 01:23am
+		updates to autoactions
+			added 'os' filter
+			added 'terminal' and 'pause' options to run command in a terminal and pause when done
+			added 'app' option for open -a <app> on osx
+		fixed opening folders on posix systems
+		added user folder expansion on posix systems

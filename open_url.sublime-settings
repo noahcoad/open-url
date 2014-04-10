@@ -1,9 +1,23 @@
 // to specify you're own, either edit this file, or copy/paste to
 // open_url.sublime-settings file in your User folder
 // if there is an open_url.sublime-settings in the User folder, Sublime ignores this file
+//
+// os=mac,win,lnx,any,psx
+// mac = Darwin Mac OSX
+// win = Windows
+// lnx = Linux like Ubuntu
+// psx = Any posix system, like OSX or Linux
+// on mac, you can specify "app" open with a specific application, like "open -a <app> <file>"
+// on any, you can specify "openwith" (not to combine with "app") which runs the openwith command then the file, like "<openwith> <file>"
+//
+// action=run,edit,menu
+// menu exists so that if the user does choose run, you can specify how to run the selected file
 {
 	"autoactions": [
-		{ "endswith": [".exe", ".com", ".sublime-project"], "action": "run" },
-		{ "endswith": [".txt", ".config", ".md", ".log", ".sublime-settings"], "action": "edit" }
+		{ "os": "win", "endswith": [".exe", ".com"], "action": "run" },
+		{ "os": "mac", "endswith": [".sublime-project"], "action": "run", "app": "Sublime Text" },
+		{ "os": "lnx", "endswith": [".sublime-project"], "action": "run", "openwith": "subl" },
+		{ "os": "psx", "endswith": [".sh"], "action": "menu", "openwith": "sh", "terminal": true, "pause": true },
+		{ "os": "any", "endswith": [".txt", ".config", ".md", ".log", ".sublime-settings"], "action": "edit" }
 	]
 }

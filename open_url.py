@@ -2,12 +2,10 @@
 # Hosted at http://github.com/noahcoad/open-url
 
 import sublime, sublime_plugin
-import webbrowser, urllib, urllib.parse, threading, re, os, subprocess
+import webbrowser, urllib, urllib.parse, threading, re, os, subprocess, platform
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
-	open_me = ""
-	open_with = None
-	debug = False
+	debug = True
 
 	def run(self, edit=None, url=None):
 
@@ -35,16 +33,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# if it is a URL, open in browser
 		# otherwise google it
 		if os.path.isdir(url):
-			os.startfile(url)
+			self.openfolder(url)
 		
 		elif relative_path and os.path.isdir(relative_path):
-			os.startfile(relative_path)
+			self.openfolder(relative_path)
 		
 		elif os.path.exists(url):
 			self.choose_action(url)
 
 		elif os.path.exists(os.path.expandvars(url)):
 			self.choose_action(os.path.expandvars(url))
+		
+		elif os.name == 'posix' and os.path.exists(os.path.expanduser(url)):
+			self.choose_action(os.path.expanduser(url))
 		
 		elif relative_path and os.path.exists(relative_path):
 			self.choose_action(relative_path)
@@ -59,6 +60,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			else:
 				url = "http://google.com/#q=" + urllib.parse.quote(url, '')
 				webbrowser.open_new_tab(url)
+
+	def locfile(url):
+		pass
+		# os.path.expandvars(url)
+		# re.sub(r'\%(\w+)\%', r'${\1}',
 
 	# pulls the current selection or url under the cursor
 	def selection(self):
@@ -89,37 +95,103 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		return self.view.substr(sublime.Region(start, end)).strip()
 
 	# for files, as the user if they's like to edit or run the file
-	def choose_action(self, file):
-		self.open_me = file
+	def choose_action(self, path):
 		action = 'menu'
+		autoinfo = None
 		config = sublime.load_settings("open_url.sublime-settings")
+
+		# see if there's already an action defined for this file
 		for auto in config.get('autoactions'):
-			for ending in auto['endswith']:
-				if (file.endswith(ending)):
-					action = auto['action']
-					if ('openwith' in auto):
-						self.open_with = auto['openwith']
-					break
+			# see if this line applies to this opperating system
+			if 'os' in auto:
+				oscheck = auto['os'] == 'any' \
+					or (auto['os'] == 'win' and platform.system() == 'Windows') \
+					or (auto['os'] == 'lnx' and platform.system() == 'Linux') \
+					or (auto['os'] == 'mac' and platform.system() == 'Darwin') \
+					or (auto['os'] == 'psx' and (platform.system() == 'Darwin' or platform.system() == 'Linux'))
+			else:
+				oscheck = True
+
+			# if the line is for this OS, then check to see if we have a file pattern match
+			if oscheck:
+				for ending in auto['endswith']:
+					if (path.endswith(ending)):
+						action = auto['action']
+						autoinfo = auto
+						break
+
+		# either show a menu or perform the action
 		if action == 'menu':
-			sublime.active_window().show_quick_panel(["Edit", "Run"], self.select_done)
+			sublime.active_window().show_quick_panel(["Edit", "Run"], lambda idx: self.select_done(idx, autoinfo, path)	)
 		elif action == 'edit':
-			self.select_done(0)
+			self.select_done(0, autoinfo, path)
 		elif action == 'run':
-			self.select_done(1)
+			self.select_done(1, autoinfo, path)
+		else:
+			raise 'unsupported action'
+
+	def openfolder(self, folder):
+		spec = {'Darwin': 'open', 'Windows': 'explorer', 'Linux': 'nautilus --browser'}
+		if not platform.system() in spec: raise 'unsupported os';
+		cmd = "%s \"%s\"" % (spec[platform.system()], folder)
+		self.runapp(cmd)
 
 	# shell execution must be on another thread to keep Sublime from locking if it's a sublime file
-	def run_me(self, file, open_with):
-		if open_with:
-			subprocess.call([open_with, file], shell = True)
+	def callsubproc(self, args, shell):
+		if (self.debug): print('call, shell=%s, args=%s' % (shell, args));
+		subprocess.call(args, shell = shell)
+
+	# run using a seperate thread
+	def runapp(self, args, shell = None):
+		if shell is None: shell = not isinstance(args, list);
+		threading.Thread(target=self.callsubproc, args=(args, shell)).start()
+
+	def runfile(self, autoinfo, path):
+		plat = platform.system()
+		
+		# default methods to open files
+		defrun = {'Darwin': 'open', 'Windows': '', 'Linux': 'mimeopen'}
+		if not plat in defrun: raise 'unsupported os';
+		
+		# check if there are special instructions to open this file
+		if autoinfo == None or not 'openwith' in autoinfo:
+			if not autoinfo == None and plat == 'Darwin' and 'app' in autoinfo:
+				cmd = "%s -a %s %s" % self.quote((defrun[plat], autoinfo['app'], path))
+			else:
+				cmd = "%s %s" % self.quote((defrun[platform.system()], path))
 		else:
-			os.system("\"" + file + "\"")
+			cmd = "%s %s" % self.quote((autoinfo['openwith'], path))
+
+		# run command in a terminal and pause if desired
+		if 'terminal' in autoinfo and autoinfo['terminal']:
+			pause = 'pause' in autoinfo and autoinfo['pause']
+			xterm = {'Darwin': '/opt/X11/bin/xterm', 'Linux': '/usr/bin/xterm'}
+			if plat in xterm:
+				cmd = [xterm[plat], '-e', cmd + ('; read -p "Press [ENTER] to continue..."' if pause else '')]
+			elif os.name == 'nt': 
+				cmd = 'cmd /c \"%s\"' % (cmd, ' && pause' if pause else '')
+			else: raise 'unsupported os';
+		
+		# open the file on a seperate thread
+		if (self.debug): print('cmd: %s' % cmd);
+		self.runapp(cmd)
+		# self.runapp(['/opt/X11/bin/xterm', '-e', '"sleep" "3"'], False)
+		# self.runapp(['/opt/X11/bin/xterm', '-e', 'sh echo "hello"; read -p "pause"'], False)
 
 	# for files, either open the file for editing in sublime, or shell execute the file
-	def select_done(self, index):
-		if index == 0:
-			self.view.window().open_file(self.open_me)
-		elif index == 1:
-			threading.Thread(target=self.run_me, args=(self.open_me, self.open_with)).start()
+	def select_done(self, idx, autoinfo, path):
+		if idx == 0: self.view.window().open_file(path);
+		elif idx == 1: self.runfile(autoinfo, path);
+
+	def quote(self, stuff):
+		if isinstance(stuff, str):
+			return '"' + stuff + '"'
+		elif isinstance(stuff, list):
+			return [self.quote(x) for x in stuff]
+		elif isinstance(stuff, tuple):
+			return tuple(self.quote(list(stuff)))
+		else:
+			raise 'unsupported type'
 
 # p.s. Yes, I'm using hard tabs for indentation.  bite me
 # set tabs to whatever level of indentation you like in your editor 
