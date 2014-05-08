@@ -1,3 +1,4 @@
 [
-	{ "keys": ["ctrl+u"], "command": "open_url" }
+	{ "keys": ["ctrl+u"], "command": "open_url", "args": {"website": "http://google.com/#q="}},
+	{ "keys": ["ctrl+l"], "command": "open_url", "args": {"website": "http://dict.leo.org/ende/index_de.html#/search="} }
 ]
