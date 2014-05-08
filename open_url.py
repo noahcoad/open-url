@@ -10,12 +10,17 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	debug = False
 	config = sublime.load_settings("open_url.sublime-settings")
 
-	def run(self, edit=None, url=None):
+	def run(self, edit=None, url=None, website=None):
 
 		# sublime text has its own open_url command used for things like Help menu > Documentation
 		# so if a url is specified, then open it instead of getting text from the edit window
 		if url is None:
 			url = self.selection()
+
+		# if someone doesn't set the parameter in the key settings
+		if website is None:
+			website = "http://google.com/#q="
+
 
 		# strip quotes if quoted
 		if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")):
@@ -37,19 +42,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# otherwise google it
 		if os.path.isdir(url):
 			os.startfile(url)
-		
+
 		elif relative_path and os.path.isdir(relative_path):
 			os.startfile(relative_path)
-		
+
 		elif os.path.exists(url):
 			self.choose_action(url)
 
 		elif os.path.exists(os.path.expandvars(url)):
 			self.choose_action(os.path.expandvars(url))
-		
+
 		elif relative_path and os.path.exists(relative_path):
 			self.choose_action(relative_path)
-		
+
 		else:
 			if "://" in url:
 				webbrowser.open_new_tab(url)
@@ -58,7 +63,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 					url = "http://" + url
 				webbrowser.open_new_tab(url)
 			else:
-				url = "http://google.com/#q=" + urllib.quote(url, '')
+				url = website + urllib.quote(url, '')
 				webbrowser.open_new_tab(url)
 
 	# pulls the current selection or url under the cursor
@@ -70,7 +75,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		end = s.b
 
 		# if nothing is selected, expand selection to nearest terminators
-		if (start == end): 
+		if (start == end):
 			view_size = self.view.size()
 			terminator = list('\t\"\'><, []()')
 
@@ -122,7 +127,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			thread.start_new_thread(self.run_me, (self.open_me, self.open_with))
 
 # p.s. Yes, I'm using hard tabs for indentation.  bite me
-# set tabs to whatever level of indentation you like in your editor 
-# for crying out loud, at least they're consistent here, and use 
+# set tabs to whatever level of indentation you like in your editor
+# for crying out loud, at least they're consistent here, and use
 # the ST2 command "Indentation: Convert to Spaces", which will convert
 # to spaces if you really need to be part of the 'soft tabs only' crowd =)
