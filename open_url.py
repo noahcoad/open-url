@@ -14,6 +14,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if url is None:
 			url = self.selection()
 
+		# expand variables in the path
+		url = os.path.expandvars(url)
+
 		# strip quotes if quoted
 		if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")):
 			url = url[1:-1]
