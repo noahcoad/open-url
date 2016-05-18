@@ -4,6 +4,7 @@
 Place cursor under these (or select the text),
 the hit ctrl+u to open, or right-click for context menu, or alt+double-click
 
+helloworld.com
 http://www.google.com/reader/view/
 google.com/reader/view/
 C:\Temp\tmp.txt  example.py
