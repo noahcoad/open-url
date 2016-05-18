@@ -6,6 +6,7 @@ import webbrowser, urllib, urllib.parse, threading, re, os, subprocess, platform
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
 	debug = True
+	domains = "|".join([x for x in open('tlds-alpha-by-domain.txt').read().split() if x[0:1] != "#"]) 
 
 	def run(self, edit=None, url=None):
 
@@ -56,7 +57,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		else:
 			if "://" in url:
 				webbrowser.open_new_tab(url)
-			elif re.search(r"\w[^\s]*\.(?:com|co|uk|gov|edu|tv|net|org|tel|me|us|mobi|es|io)[^\s]*\Z", url):
+			elif re.search(r"\w[^\s]*\.(?:%s)[^\s]*\Z" % self.domains, url, re.IGNORECASE):
 				if not "://" in url:
 					url = "http://" + url
 				webbrowser.open_new_tab(url)
