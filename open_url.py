@@ -39,6 +39,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if os.path.isdir(url):
 			self.openfolder(url)
 		
+		if os.path.isdir(os.path.expanduser(url)):
+			self.openfolder(os.path.expanduser(url))
+
 		elif relative_path and os.path.isdir(relative_path):
 			self.openfolder(relative_path)
 		
