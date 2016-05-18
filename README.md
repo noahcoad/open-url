@@ -33,13 +33,14 @@ Ways to run the command:
 
 ## Options
 ### Default Actions
-You can set specific file extensions to be edit or run without being prompted with a menu.  The default has been set for .sublime-project .txt and a few other files types.  Open open_url.sublime-settings to change and add your own.
+You can set specific file extensions to be edit or run without being prompted with a menu.  The default has been set for ```.sublime-project``` ```.txt``` and a few other files types.  Open ```open_url.sublime-settings``` to change and add your own.
 
-* If the action is 'edit' it will be opened for editing in Sublime
-* If the action is 'run' it will be executed by the OS
-* You can add an 'openwith': 'myprogram.exe' to the end of an 'endswith' line to specify a specific a program to open the file with.  In this case the shell will execute the openwith program and the selection will be a parameter.
+* If the action is ```edit``` it will be opened for editing in Sublime
+* If the action is ```run``` it will be executed by the OS
+* You can add an ```'openwith': 'myprogram.exe'``` to specify a specific a program to open the file with.  In this case the shell will execute the openwith program and the selection will be a parameter.
 
 ## Update Notices
+* *2016-05-17*, added support for ~ on posix, added all top level icann domains, added 'add to project' for folders
 * *2013-10-14*, Sublime Text 3 version added.  Updates going forward will only be made to the Sublime Text 3 version of the package.
 * Additional updates are now tracked in this notes.txt file: https://github.com/noahcoad/open-url/blob/st3/notes.txt
 
