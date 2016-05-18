@@ -26,10 +26,11 @@ improvement ideas
 			http://en.wikipedia.org/wiki/Funky_Cold_Medina
 		aliases
 			[myfile] somewhere in the file # Open this [myfile] = c:\asdasdasd
-		for folders: reveal, add to project, open in new window
+		for folders add 'open in new window'
 		for files, add 'reveal'
-		add support for ~ in folders
 	implemented/fixed
+		for folders add 'add to project'
+		add support for ~ in folders
 		support all icann top level domain extensions
 		bug: open_url is a registered command, need to find another command name
 		setting to always run or always edit certain files

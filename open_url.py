@@ -37,13 +37,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# if it is a URL, open in browser
 		# otherwise google it
 		if os.path.isdir(url):
-			self.openfolder(url)
+			self.folder_action(url)
 		
 		if os.path.isdir(os.path.expanduser(url)):
-			self.openfolder(os.path.expanduser(url))
+			self.folder_action(os.path.expanduser(url))
 
 		elif relative_path and os.path.isdir(relative_path):
-			self.openfolder(relative_path)
+			self.folder_action(relative_path)
 		
 		elif os.path.exists(url):
 			self.choose_action(url)
@@ -129,7 +129,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		# either show a menu or perform the action
 		if action == 'menu':
-			sublime.active_window().show_quick_panel(["Edit", "Run"], lambda idx: self.select_done(idx, autoinfo, path)	)
+			sublime.active_window().show_quick_panel(["edit", "run"], lambda idx: self.select_done(idx, autoinfo, path)	)
 		elif action == 'edit':
 			self.select_done(0, autoinfo, path)
 		elif action == 'run':
@@ -137,7 +137,21 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		else:
 			raise 'unsupported action'
 
-	def openfolder(self, folder):
+	def folder_action(self, folder):
+		opts = ["reveal", "add to project"]
+		sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, opts, folder))
+
+	def folder_done(self, idx, opts, folder):
+		if idx == 0: self.reveal_folder(folder)
+		elif idx == 1: 
+			# add folder to project
+			d = self.view.window().project_data()
+			if not d: d = {}
+			if not 'folders' in d: d['folders'] = []
+			d['folders'].append({'path': folder})
+			self.view.window().set_project_data(d)
+
+	def reveal_folder(self, folder):
 		spec = {'Darwin': 'open', 'Windows': 'explorer', 'Linux': 'nautilus --browser'}
 		if not platform.system() in spec: raise 'unsupported os';
 		cmd = "%s \"%s\"" % (spec[platform.system()], folder)
