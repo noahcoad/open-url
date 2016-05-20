@@ -26,9 +26,10 @@ improvement ideas
 			http://en.wikipedia.org/wiki/Funky_Cold_Medina
 		aliases
 			[myfile] somewhere in the file # Open this [myfile] = c:\asdasdasd
+	implemented/fixed
 		for folders add 'open in new window'
 		for files, add 'reveal'
-	implemented/fixed
+		for folders, add 'reveal'
 		for folders add 'add to project'
 		add support for ~ in folders
 		support all icann top level domain extensions

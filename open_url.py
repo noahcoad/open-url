@@ -1,5 +1,6 @@
 # Open URL opens selected URLs, files, folders, or googles text
-# Hosted at http://github.com/noahcoad/open-url    github.com
+# Hosted at http://github.com/noahcoad/open-url
+# test urls: google.com ~/tmp ~/tmp/tmp
 
 import sublime, sublime_plugin
 import webbrowser, urllib, urllib.parse, threading, re, os, subprocess, platform
@@ -130,7 +131,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		# either show a menu or perform the action
 		if action == 'menu':
-			sublime.active_window().show_quick_panel(["edit", "run"], lambda idx: self.select_done(idx, autoinfo, path)	)
+			sublime.active_window().show_quick_panel(["edit", "run", "reveal", "open in new window"], lambda idx: self.select_done(idx, autoinfo, path)	)
 		elif action == 'edit':
 			self.select_done(0, autoinfo, path)
 		elif action == 'run':
@@ -139,11 +140,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			raise 'unsupported action'
 
 	def folder_action(self, folder):
-		opts = ["reveal", "add to project"]
+		opts = ["reveal", "add to project", "open in new window"]
 		sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, opts, folder))
 
 	def folder_done(self, idx, opts, folder):
-		if idx == 0: self.reveal_folder(folder)
+		if idx == 0: self.reveal(folder)
 		elif idx == 1: 
 			# add folder to project
 			d = self.view.window().project_data()
@@ -151,12 +152,17 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			if not 'folders' in d: d['folders'] = []
 			d['folders'].append({'path': folder})
 			self.view.window().set_project_data(d)
+		elif idx == 2:
+			self.open_in_new_window(folder)
 
-	def reveal_folder(self, folder):
-		spec = {'Darwin': 'open', 'Windows': 'explorer', 'Linux': 'nautilus --browser'}
-		if not platform.system() in spec: raise 'unsupported os';
-		cmd = "%s \"%s\"" % (spec[platform.system()], folder)
-		self.runapp(cmd)
+	def reveal(self, path):
+		spec = {'dir': {'Darwin': ['open'], 'Windows': ['explorer'], 'Linux': ['nautilus', '--browser']},
+			'file': {'Darwin': ['open', '-R'], 'Windows': ['explorer', '/select'], 'Linux': ['nautilus', '--browser']}}
+		if not platform.system() in spec['dir']: raise 'unsupported os';
+		args = spec['dir' if os.path.isdir(path) else 'file'][platform.system()]
+		args.append(path)
+		subprocess.Popen(args)
+		# ~/tmp ~/tmp/tmp
 
 	# shell execution must be on another thread to keep Sublime from locking if it's a sublime file
 	def callsubproc(self, args, shell):
@@ -207,8 +213,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	# for files, either open the file for editing in sublime, or shell execute the file
 	def select_done(self, idx, autoinfo, path):
-		if idx == 0: self.view.window().open_file(path);
-		elif idx == 1: self.runfile(autoinfo, path);
+		if idx == 0: self.view.window().open_file(path)
+		elif idx == 1: self.runfile(autoinfo, path)
+		elif idx == 2: self.reveal(path)
+		elif idx == 3: self.open_in_new_window(path)
 
 	def quote(self, stuff):
 		if isinstance(stuff, str):
@@ -219,6 +227,28 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			return tuple(self.quote(list(stuff)))
 		else:
 			raise 'unsupported type'
+
+	def open_in_new_window(self, path):
+		items = []
+
+		executable_path = sublime.executable_path()
+
+		if sublime.platform() == 'osx':
+			app_path = executable_path[:executable_path.rfind(".app/")+5]
+			executable_path = app_path+"Contents/SharedSupport/bin/subl"
+
+		# build arguments
+		path = os.path.abspath(path)
+		items.append(executable_path)
+		if os.path.isfile(path): 
+			items.append(os.path.dirname(path))
+		items.append(path)
+
+		subprocess.Popen(items, cwd=items[1])
+
+	def escapeCMDWindows(string):
+		return string.replace('^', '^^')
+
 
 # p.s. Yes, I'm using hard tabs for indentation.  bite me
 # set tabs to whatever level of indentation you like in your editor 
