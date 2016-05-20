@@ -40,6 +40,7 @@ You can set specific file extensions to be edit or run without being prompted wi
 * You can add an ```'openwith': 'myprogram.exe'``` to specify a specific a program to open the file with.  In this case the shell will execute the openwith program and the selection will be a parameter.
 
 ## Update Notices
+* *2016-05-20*, added "open in new window" and "reveal" for files and folders<div></div>
 * *2016-05-17*, added support for ~ on posix, added all top level icann domains, added 'add to project' for folders
 * *2013-10-14*, Sublime Text 3 version added.  Updates going forward will only be made to the Sublime Text 3 version of the package.
 * Additional updates are now tracked in this notes.txt file: https://github.com/noahcoad/open-url/blob/st3/notes.txt
