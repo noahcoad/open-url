@@ -1,6 +1,6 @@
 # Open URL opens selected URLs, files, folders, or googles text
 # Hosted at http://github.com/noahcoad/open-url
-# test urls: google.com ~/tmp ~/tmp/tmp
+# test urls: google.com ~/tmp ~/tmp/tmp c:\noah c:\noah\tmp.txt c:\noah\tmp
 
 import sublime, sublime_plugin
 import webbrowser, urllib, urllib.parse, threading, re, os, subprocess, platform
@@ -157,10 +157,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	def reveal(self, path):
 		spec = {'dir': {'Darwin': ['open'], 'Windows': ['explorer'], 'Linux': ['nautilus', '--browser']},
-			'file': {'Darwin': ['open', '-R'], 'Windows': ['explorer', '/select'], 'Linux': ['nautilus', '--browser']}}
+			'file': {'Darwin': ['open', '-R'], 'Windows': ['explorer', '/select,"<path>"'], 'Linux': ['nautilus', '--browser']}}
 		if not platform.system() in spec['dir']: raise 'unsupported os';
 		args = spec['dir' if os.path.isdir(path) else 'file'][platform.system()]
-		args.append(path)
+		if '<path>' in args[-1:]:
+			args[-1:] = args[-1:].replace('<path>', path)
+		else:
+			args.append(path)
+		if debug: print("open_url debug: %s" % args)
 		subprocess.Popen(args)
 		# ~/tmp ~/tmp/tmp
 
