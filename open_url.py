@@ -164,7 +164,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			args[-1:] = args[-1:].replace('<path>', path)
 		else:
 			args.append(path)
-		if debug: print("open_url debug: %s" % args)
+		if self.debug: print("open_url debug: %s" % args)
 		subprocess.Popen(args)
 		# ~/tmp ~/tmp/tmp
 

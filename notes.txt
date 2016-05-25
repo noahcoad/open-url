@@ -62,3 +62,7 @@ updates
 	2014-04-10 02:05am
 		fixed issues with running commands on windows in the command prompt
 		added open_url.sublime-settings for .bat .cmd on windows
+
+next fixes
+	run excel file, ~/code/work/manpow/data_analysis/common/nwadb/tables-and-columns.xlsx
+	reveal file and folder, ~/tmp/tmp ~/tmp
