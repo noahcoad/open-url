@@ -131,7 +131,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		# either show a menu or perform the action
 		if action == 'menu':
-			sublime.active_window().show_quick_panel(["edit", "run", "reveal", "open in new window"], lambda idx: self.select_done(idx, autoinfo, path)	)
+			sublime.active_window().show_quick_panel(["edit", "run", "reveal", "new window", "system open"], lambda idx: self.select_done(idx, autoinfo, path))
 		elif action == 'edit':
 			self.select_done(0, autoinfo, path)
 		elif action == 'run':
@@ -140,7 +140,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			raise 'unsupported action'
 
 	def folder_action(self, folder):
-		opts = ["reveal", "add to project", "open in new window"]
+		opts = ["reveal", "add to project", "new window"]
 		sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, opts, folder))
 
 	def folder_done(self, idx, opts, folder):
@@ -197,7 +197,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			cmd = "%s %s" % self.quote((autoinfo['openwith'], path))
 
 		# run command in a terminal and pause if desired
-		if 'terminal' in autoinfo and autoinfo['terminal']:
+		if autoinfo and 'terminal' in autoinfo and autoinfo['terminal']:
 			pause = 'pause' in autoinfo and autoinfo['pause']
 			xterm = {'Darwin': '/opt/X11/bin/xterm', 'Linux': '/usr/bin/xterm'}
 			if plat in xterm:
@@ -221,6 +221,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		elif idx == 1: self.runfile(autoinfo, path)
 		elif idx == 2: self.reveal(path)
 		elif idx == 3: self.open_in_new_window(path)
+		elif idx == 4: self.system_open(path)
+
+	def system_open(self, path):
+		# ~/code/work/manpow/data_analysis/common/nwadb/tables-and-columns.xlsx
+		if sublime.platform() == "osx": args = ['open', path]
+		elif sublime.platform() == "linux": args = [path]
+		elif sublime.platform() == "windows": args = ['start', path]
+		else: raise Exception("unsupported os")
+		subprocess.Popen(args, cwd=os.path.dirname(path))
 
 	def quote(self, stuff):
 		if isinstance(stuff, str):

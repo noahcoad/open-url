@@ -12,6 +12,7 @@ bugs
 	
 improvement ideas
 	backlog
+		fix open/run of files, like: ~/code/work/manpow/data_analysis/common/nwadb/tables-and-columns.xlsx
 		open paths with posix variables
 		swap platform environment variables
 			on PC: $myvar => %myvar%
