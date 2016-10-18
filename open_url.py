@@ -16,6 +16,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	# domains = "|".join([x for x in open('tlds-alpha-by-domain.txt').read().split('\n') if x[0:1] != "#"])
 
 	def run(self, edit=None, url=None):
+		self.config = sublime.load_settings("open_url.sublime-settings")
 
 		# sublime text has its own open_url command used for things like Help menu > Documentation
 		# so if a url is specified, then open it instead of getting text from the edit window
@@ -89,7 +90,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# if nothing is selected, expand selection to nearest terminators
 		if (start == end):
 			view_size = self.view.size()
-			terminator = list('\t\"\'><, []()')
+			terminator = list(self.config.get('terminators'))
 
 			# move the selection back to the start of the url
 			while (start > 0
@@ -110,10 +111,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	def choose_action(self, path):
 		action = 'menu'
 		autoinfo = None
-		config = sublime.load_settings("open_url.sublime-settings")
 
 		# see if there's already an action defined for this file
-		for auto in config.get('autoactions'):
+		for auto in self.config.get('autoactions'):
 			# see if this line applies to this opperating system
 			if 'os' in auto:
 				oscheck = auto['os'] == 'any' \
@@ -159,8 +159,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.open_in_new_window(folder)
 
 	def web_search_action(self, term):
-		opts = ["google", "dictionary.com", "thesaurus.com", "linguee.com english-spanish"]
-		urls = ["http://google.com/#q=", "http://www.dictionary.com/browse/", "http://www.thesaurus.com/browse/", "http://www.linguee.com/english-spanish/search?source=auto&query="]
+		searchers = self.config.get('web_searchers')
+		opts = [s['label'] for s in searchers]
+		urls = [s['url'] for s in searchers]
 		sublime.active_window().show_quick_panel(opts, lambda idx: self.web_search_done(idx, urls, term))
 
 	def web_search_done(self, idx, urls, term):

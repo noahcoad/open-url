@@ -20,5 +20,12 @@
 		{ "os": "lnx", "endswith": [".sublime-project"], "action": "run", "openwith": "subl" },
 		{ "os": "psx", "endswith": [".sh"], "action": "menu", "openwith": "sh", "terminal": true, "pause": true },
 		{ "os": "any", "endswith": [".txt", ".config", ".md", ".log", ".sublime-settings"], "action": "edit" }
-	]
+	],
+  "terminators": "`*\t\"'><, []()",
+  "web_searchers": [
+    { "label": "google", "url": "http://google.com/#q=" },
+    { "label": "dictionary.com", "url": "http://www.dictionary.com/browse/" },
+    { "label": "thesaurus.com", "url": "http://www.thesaurus.com/browse/" },
+    { "label": "linguee.com english-spanish", "url": "http://www.linguee.com/english-spanish/search?source=auto&query=" }
+  ]
 }
