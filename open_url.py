@@ -44,25 +44,25 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# otherwise google it
 		if os.path.isdir(url):
 			self.folder_action(url)
-		
+
 		if os.path.isdir(os.path.expanduser(url)):
 			self.folder_action(os.path.expanduser(url))
 
 		elif relative_path and os.path.isdir(relative_path):
 			self.folder_action(relative_path)
-		
+
 		elif os.path.exists(url):
 			self.choose_action(url)
 
 		elif os.path.exists(os.path.expandvars(url)):
 			self.choose_action(os.path.expandvars(url))
-		
+
 		elif os.name == 'posix' and os.path.exists(os.path.expanduser(url)):
 			self.choose_action(os.path.expanduser(url))
-		
+
 		elif relative_path and os.path.exists(relative_path):
 			self.choose_action(relative_path)
-		
+
 		else:
 			if "://" in url:
 				webbrowser.open_new_tab(url)
@@ -71,8 +71,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 					url = "http://" + url
 				webbrowser.open_new_tab(url)
 			else:
-				url = "http://google.com/#q=" + urllib.parse.quote(url, '')
-				webbrowser.open_new_tab(url)
+				self.web_search_action(urllib.parse.quote(url, ''))
 
 	def locfile(url):
 		pass
@@ -88,7 +87,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		end = s.b
 
 		# if nothing is selected, expand selection to nearest terminators
-		if (start == end): 
+		if (start == end):
 			view_size = self.view.size()
 			terminator = list('\t\"\'><, []()')
 
@@ -149,7 +148,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	def folder_done(self, idx, opts, folder):
 		if idx == 0: self.reveal(folder)
-		elif idx == 1: 
+		elif idx == 1:
 			# add folder to project
 			d = self.view.window().project_data()
 			if not d: d = {}
@@ -158,6 +157,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.view.window().set_project_data(d)
 		elif idx == 2:
 			self.open_in_new_window(folder)
+
+	def web_search_action(self, term):
+		opts = ["google", "dictionary.com", "thesaurus.com", "linguee.com english-spanish"]
+		urls = ["http://google.com/#q=", "http://www.dictionary.com/browse/", "http://www.thesaurus.com/browse/", "http://www.linguee.com/english-spanish/search?source=auto&query="]
+		sublime.active_window().show_quick_panel(opts, lambda idx: self.web_search_done(idx, urls, term))
+
+	def web_search_done(self, idx, urls, term):
+		if idx >= 0:
+			webbrowser.open_new_tab("{}{}".format(urls[idx], term))
 
 	def reveal(self, path):
 		spec = {'dir': {'Darwin': ['open'], 'Windows': ['explorer'], 'Linux': ['nautilus', '--browser']},
@@ -184,11 +192,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	def runfile(self, autoinfo, path):
 		plat = platform.system()
-		
+
 		# default methods to open files
 		defrun = {'Darwin': 'open', 'Windows': '', 'Linux': 'mimeopen'}
 		if not plat in defrun: raise 'unsupported os';
-		
+
 		# check if there are special instructions to open this file
 		if autoinfo == None or not 'openwith' in autoinfo:
 			if not autoinfo == None and plat == 'Darwin' and 'app' in autoinfo:
@@ -206,15 +214,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			xterm = {'Darwin': '/opt/X11/bin/xterm', 'Linux': '/usr/bin/xterm'}
 			if plat in xterm:
 				cmd = [xterm[plat], '-e', cmd + ('; read -p "Press [ENTER] to continue..."' if pause else '')]
-			elif os.name == 'nt': 
+			elif os.name == 'nt':
 				# subprocess.call has an odd behavior on windows in that if a parameter contains quotes
 				# it tries to escape the quotes by adding a slash in front of each double quote
 				# so c:\temp\hello.bat if passed to subprocess.call as "c:\temp\hello.bat" will be passed to the OS as \"c:\temp\hello.bat\"
-				# echo Windows doesn't know how to interprit that, so we need to remove the double quotes, 
+				# echo Windows doesn't know how to interprit that, so we need to remove the double quotes,
 				# which breaks files with spaces in their path
 				cmd = ['c:\\windows\\system32\\cmd.exe', '/c', '%s%s' % (cmd.replace('"', ''), ' & pause' if pause else '')]
 			else: raise 'unsupported os';
-		
+
 		# open the file on a seperate thread
 		if (self.debug): print('cmd: %s' % cmd);
 		self.runapp(cmd)
@@ -257,7 +265,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# build arguments
 		path = os.path.abspath(path)
 		items.append(executable_path)
-		if os.path.isfile(path): 
+		if os.path.isfile(path):
 			items.append(os.path.dirname(path))
 		items.append(path)
 
@@ -268,7 +276,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 
 # p.s. Yes, I'm using hard tabs for indentation.  bite me
-# set tabs to whatever level of indentation you like in your editor 
-# for crying out loud, at least they're consistent here, and use 
+# set tabs to whatever level of indentation you like in your editor
+# for crying out loud, at least they're consistent here, and use
 # the ST2 command "Indentation: Convert to Spaces", which will convert
 # to spaces if you really need to be part of the 'soft tabs only' crowd =)
