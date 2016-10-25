@@ -32,12 +32,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		# find the relative path to the current file 'google.com'
 		try:
-			relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
+			absolute_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
 		except (TypeError, AttributeError):
-			relative_path = None
+			project = self.view.window().project_data()
+			if project is not None:
+				try:
+					absolute_path = "{}/{}".format(project['folders'][0]['path'], url)
+				except (KeyError, IndexError):
+					absolute_path = None
+			else:
+				absolute_path = None
 
 		# debug info
-		if self.debug: print("open_url debug : ", [url, relative_path])
+		if self.debug: print("open_url debug : ", [url, absolute_path])
 
 		# if this is a directory, show it (absolute or relative)
 		# if it is a path to a file, open the file in sublime (absolute or relative)
@@ -49,8 +56,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if os.path.isdir(os.path.expanduser(url)):
 			self.folder_action(os.path.expanduser(url))
 
-		elif relative_path and os.path.isdir(relative_path):
-			self.folder_action(relative_path)
+		elif absolute_path and os.path.isdir(absolute_path):
+			self.folder_action(absolute_path)
 
 		elif os.path.exists(url):
 			self.choose_action(url)
@@ -61,8 +68,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		elif os.name == 'posix' and os.path.exists(os.path.expanduser(url)):
 			self.choose_action(os.path.expanduser(url))
 
-		elif relative_path and os.path.exists(relative_path):
-			self.choose_action(relative_path)
+		elif absolute_path and os.path.exists(absolute_path):
+			self.choose_action(absolute_path)
 
 		else:
 			if "://" in url:
