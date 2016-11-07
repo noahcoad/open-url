@@ -30,18 +30,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")):
 			url = url[1:-1]
 
-		# find the relative path to the current file 'google.com'
 		try:
+			# treat url as path relative to open view
 			absolute_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
 		except (TypeError, AttributeError):
-			project = self.view.window().project_data()
-			if project is not None:
-				try:
-					absolute_path = "{}/{}".format(project['folders'][0]['path'], url)
-				except (KeyError, IndexError):
-					absolute_path = None
-			else:
-				absolute_path = None
+			# if open view has never been saved, treat url as path relative to project root
+			absolute_path = self.path_relative_to_project_root(url)
+		else: # if path relative to open view doesn't exist, fall back to path relative to project root
+			if not os.path.exists(absolute_path):
+				absolute_path = self.path_relative_to_project_root(url)
 
 		# debug info
 		if self.debug: print("open_url debug : ", [url, absolute_path])
@@ -80,6 +77,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 				webbrowser.open_new_tab(url)
 			else:
 				self.web_search_action(urllib.parse.quote(url, ''))
+
+	def path_relative_to_project_root(self, url):
+		project = self.view.window().project_data()
+		if project is not None:
+			try:
+				return "{}/{}".format(project['folders'][0]['path'], url)
+			except (KeyError, IndexError):
+				return None
+		else:
+			return None
 
 	def locfile(url):
 		pass
