@@ -36,7 +36,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		except (TypeError, AttributeError):
 			# if open view has never been saved, treat url as path relative to project root
 			absolute_path = self.path_relative_to_project_root(url)
-		else: # if path relative to open view doesn't exist, fall back to path relative to project root
+		else:
+			# if open view has been saved but path relative to open view doesn't exist,
+			# fall back to path relative to project root
 			if not os.path.exists(absolute_path):
 				absolute_path = self.path_relative_to_project_root(url)
 
