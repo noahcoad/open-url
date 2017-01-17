@@ -2,6 +2,19 @@ hosted at: https://github.com/noahcoad/open-url
 
 known domain extensions from: http://data.iana.org/TLD/tlds-alpha-by-domain.txt
 
+:: change log
+2013-06-25  fixed bug, open_url sublime command override affecting Help > Documentation menu Package Control Discover Packages, https://github.com/noahcoad/open-url/issues/7 and https://github.com/noahcoad/open-url/issues/5
+2013-06-25  added [] and () to terminators for markdown support, https://github.com/noahcoad/open-url/pull/9
+2014-04-10  autoactions: added 'os' filter
+2014-04-10  autoactions: added 'terminal' and 'pause' options to run command in a terminal and pause when done
+2014-04-10  autoactions: added 'app' option for open -a <app> on osx
+2014-04-10  fixed opening folders on posix systems
+2014-04-10  added user folder expansion on posix systems
+2014-04-10  fixed issues with running commands on windows in the command prompt
+2014-04-10  added open_url.sublime-settings for .bat .cmd on windows
+2017-01-17  added "Select URL" to highlight and copy to clipboard the url/file
+
+
 bugs
 	known
 		path not opening in MacOS, like /bin
@@ -50,22 +63,6 @@ references
 	commands
 		http://docs.sublimetext.info/en/latest/reference/commands.html
 		http://www.sublimetext.com/docs/commands
-
-updates
-	2013-06-25 01:30am
-		fixed bug, open_url sublime command override affecting Help > Documentation menu Package Control Discover Packages, https://github.com/noahcoad/open-url/issues/7 and https://github.com/noahcoad/open-url/issues/5
-	2013-06-25 01:39am
-		added [] and () to terminators for markdown support, https://github.com/noahcoad/open-url/pull/9
-	2014-04-10 01:23am
-		updates to autoactions
-			added 'os' filter
-			added 'terminal' and 'pause' options to run command in a terminal and pause when done
-			added 'app' option for open -a <app> on osx
-		fixed opening folders on posix systems
-		added user folder expansion on posix systems
-	2014-04-10 02:05am
-		fixed issues with running commands on windows in the command prompt
-		added open_url.sublime-settings for .bat .cmd on windows
 
 next fixes
 	run excel file, ~/code/work/manpow/data_analysis/common/nwadb/tables-and-columns.xlsx
