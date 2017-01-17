@@ -2,5 +2,9 @@
 	{
 		"caption": "Open URL",
 		"command": "open_url"
+	},
+	{
+		"caption": "Select URL",
+		"command": "select_url"
 	}
 ]

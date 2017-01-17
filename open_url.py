@@ -5,6 +5,12 @@
 import sublime, sublime_plugin
 import webbrowser, urllib, urllib.parse, threading, re, os, subprocess, platform, socket
 
+class SelectUrlCommand(sublime_plugin.TextCommand):
+	def run(self, edit=None, url=None):
+		region = OpenUrlCommand(self.view).find_selection()
+		self.view.sel().add(region)
+		sublime.set_clipboard(self.view.substr(region).strip())
+
 class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	# enter debug mode on Noah's machine
@@ -80,7 +86,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# re.sub(r'\%(\w+)\%', r'${\1}',
 
 	# pulls the current selection or url under the cursor
-	def selection(self):
+	def find_selection(self):
 		s = self.view.sel()[0]
 
 		# expand selection to possible URL
@@ -105,7 +111,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 				end += 1
 
 		# grab the URL
-		return self.view.substr(sublime.Region(start, end)).strip()
+		return sublime.Region(start, end)
+
+	def selection(self):
+		return self.view.substr(self.find_selection()).strip()
 
 	# for files, as the user if they's like to edit or run the file
 	def choose_action(self, path):
@@ -144,20 +153,22 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			raise 'unsupported action'
 
 	def folder_action(self, folder):
-		opts = ["reveal", "add to project", "new window"]
+		opts = ["new window", "reveal", "add to project"]
 		sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, opts, folder))
 
 	def folder_done(self, idx, opts, folder):
-		if idx == 0: self.reveal(folder)
-		elif idx == 1: 
+		if idx == 0: 
+			self.open_in_new_window(folder)
+		elif idx == 1:
+			self.reveal(folder)
+		elif idx == 2:
 			# add folder to project
 			d = self.view.window().project_data()
 			if not d: d = {}
 			if not 'folders' in d: d['folders'] = []
 			d['folders'].append({'path': folder})
 			self.view.window().set_project_data(d)
-		elif idx == 2:
-			self.open_in_new_window(folder)
+			
 
 	def reveal(self, path):
 		spec = {'dir': {'Darwin': ['open'], 'Windows': ['explorer'], 'Linux': ['nautilus', '--browser']},

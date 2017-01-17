@@ -1,3 +1,4 @@
 [  
-	{ "command": "open_url" }  
+	{ "command": "open_url" },
+	{ "command": "select_url" }
 ]  

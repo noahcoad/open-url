@@ -1,3 +1,4 @@
 [
-	{ "keys": ["ctrl+u"], "command": "open_url" }
+	{ "keys": ["ctrl+u"], "command": "open_url" },
+	{ "keys": ["ctrl+shift+u"], "command": "select_url" },
 ]

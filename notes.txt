@@ -9,9 +9,12 @@ bugs
 	fixed
 		whitespacing on edges prevent detection of url type
 		open_url is evidently a poorly documented but built-in sublime command, so this is overriding some default sublime features like pulling up the Documentation from the help menu
-	
+
 improvement ideas
 	backlog
+		add "copy full path" for existing files and folders
+		support .openurl files in folders that would specify to either open a specific file when opening the folder, or use a project file
+		if a folder, check to see if there's a .sublime-project file in there and give that as an option to open
 		fix open/run of files, like: ~/code/work/manpow/data_analysis/common/nwadb/tables-and-columns.xlsx
 		open paths with posix variables
 		swap platform environment variables
