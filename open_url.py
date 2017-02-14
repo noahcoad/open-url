@@ -75,7 +75,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		elif targLang != None:
 			# If targLang arg is not None, translate selection via translate.google. 
 			if targLang == "en" or targLang == "de":
-				webbrowser.open_new_tab(TRANS_TO_LANG.replace("LANG", targLang) + url)
+				# Replace punctuations
+				_url  = re.sub('[\_\-\+\#]+', ' ', url)
+				webbrowser.open_new_tab(TRANS_TO_LANG.replace("LANG", targLang) + _url)
 			else: 
 				if self.debug: print("open_url debug : Unknown target LANG", targLang)
 
