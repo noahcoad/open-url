@@ -6,7 +6,8 @@ import sublime, sublime_plugin
 import webbrowser, urllib, urllib.parse, threading, re, os, subprocess, platform, socket
 
 # translate.google url template string.
-TRANS_TO_LANG="https://translate.google.com/?hl=LANG#auto/LANG/"
+TRANS_TO_LANG="https://translate.google.com/?hl=<LANG>#auto/<LANG>/"
+DUDEN_SPELLCHECK="http://www.duden.de/suchen/dudenonline/<WORD>"
 
 class SelectUrlCommand(sublime_plugin.TextCommand):
 	def run(self, edit=None, url=None):
@@ -77,7 +78,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			if targLang == "en" or targLang == "de":
 				# Replace punctuations
 				_url  = re.sub('[\_\-\+\#]+', ' ', url)
-				webbrowser.open_new_tab(TRANS_TO_LANG.replace("LANG", targLang) + _url)
+				webbrowser.open_new_tab(TRANS_TO_LANG.replace("<LANG>", targLang) + _url)
+			elif targLang == "duden":
+				url = self.selection()
+				_url  = re.sub('[\_\#\*]+', '', url) 
+				_url  = re.sub('^\-', '', _url) 
+				_url  = re.sub('$\-', '', _url) 
+				webbrowser.open_new_tab(DUDEN_SPELLCHECK.replace("<WORD>", _url))				
 			else: 
 				if self.debug: print("open_url debug : Unknown target LANG", targLang)
 
