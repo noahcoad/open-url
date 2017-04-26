@@ -80,11 +80,6 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         else:
             return None
 
-    def locfile(url):
-        pass
-        # os.path.expandvars(url)
-        # re.sub(r'\%(\w+)\%', r'${\1}',
-
     # pulls the current selection or url under the cursor
     def selection(self):
         s = self.view.sel()[0]
@@ -272,6 +267,3 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         items.append(path)
 
         subprocess.Popen(items, cwd=items[1])
-
-    def escapeCMDWindows(string):
-        return string.replace('^', '^^')
