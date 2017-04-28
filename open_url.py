@@ -135,7 +135,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         # either show a menu or perform the action
         if action == 'menu':
-            sublime.active_window().show_quick_panel(["edit", "run", "reveal", "new window", "system open"], lambda idx: self.select_done(idx, autoinfo, path))
+            sublime.active_window().show_quick_panel(
+                ["edit", "run", "reveal", "new window", "system open"],
+                lambda idx: self.select_done(idx, autoinfo, path)
+            )
         elif action == 'edit':
             self.select_done(0, autoinfo, path)
         elif action == 'run':
@@ -144,11 +147,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             raise 'unsupported action'
 
     def folder_action(self, folder):
-        opts = ["reveal", "add to project", "new window"]
+        openers = self.config.get('directory_open_commands', {})
+        opts = ["reveal", "add to project", "new window"] + [opener.get('label') for opener in openers]
         sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, opts, folder))
 
     def folder_done(self, idx, opts, folder):
-        if idx == 0: self.reveal(folder)
+        if idx < 0:
+            return
+        if idx == 0:
+            self.reveal(folder)
         elif idx == 1:
             # add folder to project
             d = self.view.window().project_data()
@@ -158,6 +165,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self.view.window().set_project_data(d)
         elif idx == 2:
             self.open_in_new_window(folder)
+
+        else: # custom directory opener was used
+            openers = self.config.get('directory_open_commands', {})
+            idx = idx - 3
+            commands = openers[idx].get('commands')
+            subprocess.check_call(commands + [folder])
+
 
     def web_search_action(self, term):
         searchers = self.config.get('web_searchers')
