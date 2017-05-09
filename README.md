@@ -1,8 +1,7 @@
 # Open URL a Sublime Text Package
 Please see: https://github.com/noahcoad/open-url/
 
-## Unmerged Additions
-Additional options in settings:
+## Settings
 
 - __terminators__
   + characters at which auto-expansion of selected path stops, e.g. ``*\t\"'><, []()`
