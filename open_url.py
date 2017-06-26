@@ -78,7 +78,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                     url = "http://" + url
                 webbrowser.open_new_tab(url)
             else:
-                self.web_search_action(urllib.parse.quote(url, ''))
+                self.modify_search_or_web_search_action(url)
 
     def path_relative_to_project_root(self, url):
         project = self.view.window().project_data()
@@ -184,26 +184,25 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             commands = openers[idx].get('commands')
             subprocess.check_call(commands + [folder])
 
-    def web_search_action(self, term):
+    def modify_search_or_web_search_action(self, term):
         searchers = self.config.get('web_searchers')
-        opts = [s['label'] for s in searchers]
-        urls = [s['url'] for s in searchers]
-        opts.append('modify url')
-        urls.append('')
+        opts = ['modify url']
+        urls = ['']
+        opts += [s['label'] for s in searchers]
+        urls += [s['url'] for s in searchers]
         sublime.active_window().show_quick_panel(opts, lambda idx: self.web_search_done(idx, urls, term))
 
     def web_search_done(self, idx, urls, term):
-        if idx == len(urls) - 1:
-            self.window.show_input_panel('URL or path:', term, self.url_search_modified, None, None)
-        elif idx >= 0:
+        if idx == 0:
+            self.view.window().show_input_panel('URL or path:', term, self.url_search_modified, None, None)
+        elif idx > 0:
             webbrowser.open_new_tab("{}{}".format(urls[idx], term))
 
     def url_search_modified(self, text):
         """Call `open_url` again on modified path.
         """
         try:
-            if self.window.active_view():
-                self.window.active_view().run_command('open_url', {'url': text})
+            self.view.run_command('open_url', {'url': text})
         except ValueError:
             pass
 

@@ -23,7 +23,7 @@
 	],
   "terminators": "`*\t\"'><, []()",
   "web_searchers": [
-    { "label": "google", "url": "http://google.com/#q=" },
+    { "label": "google", "url": "http://google.com/search?q=" },
     { "label": "dictionary.com", "url": "http://www.dictionary.com/browse/" },
     { "label": "thesaurus.com", "url": "http://www.thesaurus.com/browse/" }
   ],
