@@ -2,3 +2,4 @@
 *.sublime-workspace
 *.pyc
 *-MarkdownPadPreview.html
+sandbox/*

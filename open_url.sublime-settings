@@ -21,11 +21,9 @@
 		{ "os": "psx", "endswith": [".sh"], "action": "menu", "openwith": "sh", "terminal": true, "pause": true },
 		{ "os": "any", "endswith": [".txt", ".config", ".md", ".log", ".sublime-settings"], "action": "edit" }
 	],
-  "terminators": "`*\t\"'><, []()",
+  "terminators": " \t\n\r\"'`,*<>[]()",
   "web_searchers": [
     { "label": "google", "url": "http://google.com/search?q=" },
-    { "label": "dictionary.com", "url": "http://www.dictionary.com/browse/" },
-    { "label": "thesaurus.com", "url": "http://www.thesaurus.com/browse/" }
   ],
   "directory_open_commands": [
   ]
