@@ -1,7 +1,7 @@
 // to specify your own, either edit this file, or copy/paste to
 // open_url.sublime-settings file in your User folder
-// if there is an open_url.sublime-settings in the User folder, Sublime ignores this file
-//
+// if there is an open_url.sublime-settings in the User folder, Sublime Text merges those settings with the ones in this file
+
 // os=mac,win,lnx,any,psx
 // mac = Darwin Mac OSX
 // win = Windows
@@ -9,7 +9,7 @@
 // psx = Any posix system, like OSX or Linux
 // on mac, you can specify "app" open with a specific application, like "open -a <app> <file>"
 // on any, you can specify "openwith" (not to combine with "app") which runs the openwith command then the file, like "<openwith> <file>"
-//
+
 // action=run,edit,menu
 // menu exists so that if the user does choose run, you can specify how to run the selected file
 {

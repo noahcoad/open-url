@@ -25,7 +25,7 @@ def prepend_scheme(s):
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
     def run(self, edit=None, url=None):
-        self.config = sublime.load_settings("open_url.sublime-settings")
+        self.config = sublime.load_settings('open_url.sublime-settings')
 
         # Sublime Text has its own open_url command used for things like Help > Documentation
         # so if a url is passed, open it instead of getting text from the view
@@ -126,7 +126,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         # either show a menu or perform the action
         if action == 'menu':
             sublime.active_window().show_quick_panel(
-                ["edit", "run", "reveal", "new window", "system open"],
+                ['edit', 'run', 'reveal', 'new window', 'system open'],
                 lambda idx: self.select_done(idx, autoinfo, path)
             )
         elif action == 'edit':
@@ -138,7 +138,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
     def folder_action(self, folder):
         openers = self.config.get('directory_open_commands', {})
-        opts = ["reveal", "add to project", "new window"] + [opener.get('label') for opener in openers]
+        opts = ['reveal', 'add to project', 'new window'] + [opener.get('label') for opener in openers]
         sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, opts, folder))
 
     def folder_done(self, idx, opts, folder):
@@ -176,7 +176,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         if idx == 0:
             self.view.window().show_input_panel('URL or path:', term, self.url_search_modified, None, None)
         elif idx > 0:
-            webbrowser.open_new_tab("{}{}".format(urls[idx], term))
+            webbrowser.open_new_tab('{}{}'.format(urls[idx], term))
 
     def url_search_modified(self, text):
         """Call `open_url` again on modified path.
@@ -269,14 +269,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self.system_open(path)
 
     def system_open(self, path):
-        if sublime.platform() == "osx":
+        if sublime.platform() == 'osx':
             args = ['open', path]
-        elif sublime.platform() == "linux":
+        elif sublime.platform() == 'linux':
             args = [path]
-        elif sublime.platform() == "windows":
+        elif sublime.platform() == 'windows':
             args = ['start', path]
         else:
-            raise Exception("unsupported os")
+            raise Exception('unsupported os')
         subprocess.Popen(args, cwd=os.path.dirname(path))
 
     def quote(self, stuff):
