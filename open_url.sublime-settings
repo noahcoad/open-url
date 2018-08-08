@@ -9,16 +9,20 @@
     { "label": "google search", "url": "http://google.com/search?q=" },
   ],
 
+  // set to false if you want to disable these commands: ('add to sublime project', 'new sublime window')
+  "directory_extra_commands": true,
+
   // pass a directory to any of these shell commands, run in a subprocess
   "directory_open_commands": [
     // { "label": "terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] },
   ],
 
-  // set to false if you want to disable these ('add to sublime project', 'new sublime window')
-  "directory_extra_commands": true,
-
-  // set to false if you want to disable these ('run', 'new sublime window', 'system open')
+  // set to false if you want to disable these commands: ('run', 'new sublime window', 'system open')
   "file_extra_commands": true,
+
+  "file_open_commands": [
+    // { "label": "terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] },
+  ],
 
   // action=run,edit,menu: if you choose to run a file, you can specify how to run it
   // os=mac,win,lnx,any,psx

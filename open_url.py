@@ -98,15 +98,12 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
             return path
 
-    def run_subprocess(self, args, shell=None):
+    def run_subprocess(self, args):
         """Runs on another thread to avoid blocking main thread.
         """
-        if shell is None:
-            shell = not isinstance(args, list)
-
-        def sp(args, shell):
-            subprocess.call(args, shell=shell)
-        threading.Thread(target=sp, args=(args, shell)).start()
+        def sp(args):
+            subprocess.check_call(args, shell=not isinstance(args, list))
+        threading.Thread(target=sp, args=(args,)).start()
 
     def modify_or_search_action(self, term):
         """Not a URL and not a local path; prompts user to modify path and looks
@@ -143,8 +140,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         extra = self.config.get('directory_extra_commands', False)
         if not extra:
             idx += 2
-        if idx == 1:
-            # add folder to project
+
+        if idx == 1:  # add folder to project
             d = self.view.window().project_data()
             if not d:
                 d = {}
@@ -152,16 +149,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                 d['folders'] = []
             d['folders'].append({'path': folder})
             self.view.window().set_project_data(d)
-            return
-        if idx == 2:
+        elif idx == 2:
             self.open_in_new_window(folder)
-            return
 
-        # custom directory opener was used
-        openers = self.config.get('directory_open_commands', {})
-        idx = idx - 3
-        commands = openers[idx].get('commands')
-        self.run_subprocess(commands + [folder])
+        else:  # custom opener was used
+            openers = self.config.get('directory_open_commands', [])
+            commands = openers[idx-3].get('commands')
+            self.run_subprocess(commands + [folder])
 
     def reveal(self, path):
         spec = {
@@ -217,16 +211,17 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         # either show a menu or perform the action
         if action == 'menu':
+            openers = self.config.get('file_open_commands', [])
             extra = self.config.get('file_extra_commands', True)
             extra = ['run', 'new sublime window', 'system open'] if extra else []
             sublime.active_window().show_quick_panel(
-                ['edit', 'reveal'] + extra,
-                lambda idx: self.select_done(idx, autoinfo, path),
+                ['edit', 'reveal'] + extra + [opener.get('label') for opener in openers],
+                lambda idx: self.file_done(idx, autoinfo, path),
             )
         elif action == 'edit':
-            self.select_done(0, autoinfo, path)
+            self.file_done(0, autoinfo, path)
         elif action == 'run':
-            self.select_done(1, autoinfo, path)
+            self.file_done(1, autoinfo, path)
         else:
             raise 'unsupported action'
 
@@ -270,18 +265,31 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         self.run_subprocess(cmd)
 
-    # for files, either open the file for editing in sublime, or shell execute the file
-    def select_done(self, idx, autoinfo, path):
+    def file_done(self, idx, autoinfo, path):
+        if idx < 0:
+            return
         if idx == 0:
             self.view.window().open_file(path)
-        elif idx == 1:
+            return
+        if idx == 1:
             self.reveal(path)
-        elif idx == 2:
+            return
+
+        extra = self.config.get('directory_extra_commands', False)
+        if not extra:
+            idx += 3
+
+        if idx == 2:
             self.runfile(autoinfo, path)
         elif idx == 3:
             self.open_in_new_window(path)
         elif idx == 4:
             self.system_open(path)
+
+        else:  # custom opener was used
+            openers = self.config.get('file_open_commands', [])
+            commands = openers[idx-5].get('commands')
+            self.run_subprocess(commands + [path])
 
     def system_open(self, path):
         if sublime.platform() == 'osx':
