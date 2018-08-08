@@ -98,6 +98,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
             return path
 
+    def run_subprocess(self, args, shell=None):
+        """Runs on another thread to avoid blocking main thread.
+        """
+        if shell is None:
+            shell = not isinstance(args, list)
+
+        def sp(args, shell):
+            subprocess.call(args, shell=shell)
+        threading.Thread(target=sp, args=(args, shell)).start()
+
     def modify_or_search_action(self, term):
         """Not a URL and not a local path; prompts user to modify path and looks
         for it again, or searches for this term using a web searcher.
@@ -114,53 +124,6 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self.view.window().show_input_panel('URL or path:', term, self.url_search_modified, None, None)
         elif idx > 0:
             webbrowser.open_new_tab('{}{}'.format(urls[idx], term))
-
-    def url_search_modified(self, text):
-        """Call open_url again on modified path.
-        """
-        try:
-            self.view.run_command('open_url', {'url': text})
-        except ValueError:
-            pass
-
-    def file_action(self, path):
-        """Asks user if they'd like to edit or run the file.
-        """
-        action = 'menu'
-        autoinfo = None
-
-        # see if there's already an action defined for this file
-        for auto in self.config.get('autoactions'):
-            # see if this line applies to this opperating system
-            if 'os' in auto:
-                oscheck = auto['os'] == 'any' \
-                    or (auto['os'] == 'win' and platform.system() == 'Windows') \
-                    or (auto['os'] == 'lnx' and platform.system() == 'Linux') \
-                    or (auto['os'] == 'mac' and platform.system() == 'Darwin') \
-                    or (auto['os'] == 'psx' and (platform.system() == 'Darwin' or platform.system() == 'Linux'))
-            else:
-                oscheck = True
-
-            # if the line is for this OS, then check to see if we have a file pattern match
-            if oscheck:
-                for ending in auto['endswith']:
-                    if (path.endswith(ending)):
-                        action = auto['action']
-                        autoinfo = auto
-                        break
-
-        # either show a menu or perform the action
-        if action == 'menu':
-            sublime.active_window().show_quick_panel(
-                ['edit', 'run', 'reveal', 'new window', 'system open'],
-                lambda idx: self.select_done(idx, autoinfo, path)
-            )
-        elif action == 'edit':
-            self.select_done(0, autoinfo, path)
-        elif action == 'run':
-            self.select_done(1, autoinfo, path)
-        else:
-            raise 'unsupported action'
 
     def folder_action(self, folder):
         openers = self.config.get('directory_open_commands', [])
@@ -198,7 +161,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         openers = self.config.get('directory_open_commands', {})
         idx = idx - 3
         commands = openers[idx].get('commands')
-        subprocess.check_call(commands + [folder])
+        self.run_subprocess(commands + [folder])
 
     def reveal(self, path):
         spec = {
@@ -218,15 +181,54 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             args.append(path)
         subprocess.Popen(args)
 
-    def runapp(self, args, shell=None):
-        """Runs on another thread to avoid blocking main thread.
+    def url_search_modified(self, text):
+        """Call open_url again on modified path.
         """
-        if shell is None:
-            shell = not isinstance(args, list)
+        try:
+            self.view.run_command('open_url', {'url': text})
+        except ValueError:
+            pass
 
-        def callsubproc(args, shell):
-            subprocess.call(args, shell=shell)
-        threading.Thread(target=callsubproc, args=(args, shell)).start()
+    def file_action(self, path):
+        """Asks user if they'd like to edit or run the file.
+        """
+        action = 'menu'
+        autoinfo = None
+
+        # see if there's already an action defined for this file
+        for auto in self.config.get('autoactions'):
+            # see if this line applies to this opperating system
+            if 'os' in auto:
+                oscheck = auto['os'] == 'any' \
+                    or (auto['os'] == 'win' and platform.system() == 'Windows') \
+                    or (auto['os'] == 'lnx' and platform.system() == 'Linux') \
+                    or (auto['os'] == 'mac' and platform.system() == 'Darwin') \
+                    or (auto['os'] == 'psx' and (platform.system() == 'Darwin' or platform.system() == 'Linux'))
+            else:
+                oscheck = True
+
+            # if the line is for this OS, then check to see if we have a file pattern match
+            if oscheck:
+                for ending in auto['endswith']:
+                    if (path.endswith(ending)):
+                        action = auto['action']
+                        autoinfo = auto
+                        break
+
+        # either show a menu or perform the action
+        if action == 'menu':
+            extra = self.config.get('file_extra_commands', True)
+            extra = ['run', 'new sublime window', 'system open'] if extra else []
+            sublime.active_window().show_quick_panel(
+                ['edit', 'reveal'] + extra,
+                lambda idx: self.select_done(idx, autoinfo, path),
+            )
+        elif action == 'edit':
+            self.select_done(0, autoinfo, path)
+        elif action == 'run':
+            self.select_done(1, autoinfo, path)
+        else:
+            raise 'unsupported action'
 
     def runfile(self, autoinfo, path):
         plat = platform.system()
@@ -266,17 +268,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             else:
                 raise 'unsupported os'
 
-        # open the file on a seperate thread
-        self.runapp(cmd)
+        self.run_subprocess(cmd)
 
     # for files, either open the file for editing in sublime, or shell execute the file
     def select_done(self, idx, autoinfo, path):
         if idx == 0:
             self.view.window().open_file(path)
         elif idx == 1:
-            self.runfile(autoinfo, path)
-        elif idx == 2:
             self.reveal(path)
+        elif idx == 2:
+            self.runfile(autoinfo, path)
         elif idx == 3:
             self.open_in_new_window(path)
         elif idx == 4:
