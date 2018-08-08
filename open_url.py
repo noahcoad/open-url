@@ -33,19 +33,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             url = self.get_selection()
         path = self.abs_path(url)
 
-        if os.path.isdir(path):
-            self.folder_action(path)
-            return
-
         if os.path.isfile(path):
             self.file_action(path)
+            return
+
+        if os.path.isdir(path):
+            self.folder_action(path)
             return
 
         if re.search(r"\w[^\s]*\.(?:%s)[^\s]*\Z" % domains, url, re.IGNORECASE):
             url = prepend_scheme(url)
             webbrowser.open_new_tab(url)
         else:
-            self.modify_search_action(url)
+            self.modify_or_search_action(url)
 
     def get_selection(self):
         """Returns selection. If selection contains no characters, expands it
@@ -84,18 +84,44 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             return path
 
         file_path = self.view.file_name()
-        if file_path:
+        if file_path:  # this file has been saved to disk
             abs_path = os.path.join(os.path.dirname(file_path), path)
-            if os.path.exists(abs_path):
+            if os.path.exists(abs_path):  # if file relative to current view exists, open it, else continue
                 return abs_path
 
         project = self.view.window().project_data()
-        if project is None:
+        if project is None:  # nothing more to try
             return path
-        try:
+        try:  # look for file relative to project root
             return os.path.join(project['folders'][0]['path'], path)
         except (KeyError, IndexError):
+
             return path
+
+    def modify_or_search_action(self, term):
+        """Not a URL and not a local path; prompts user to modify path and looks
+        for it again, or searches for this term using a web searcher.
+        """
+        searchers = self.config.get('web_searchers')
+        opts = ['modify path ({})'.format(term)]
+        urls = ['']
+        opts += ['{} ({})'.format(s['label'], term) for s in searchers]
+        urls += [s['url'] for s in searchers]
+        sublime.active_window().show_quick_panel(opts, lambda idx: self.web_search_done(idx, urls, term))
+
+    def web_search_done(self, idx, urls, term):
+        if idx == 0:
+            self.view.window().show_input_panel('URL or path:', term, self.url_search_modified, None, None)
+        elif idx > 0:
+            webbrowser.open_new_tab('{}{}'.format(urls[idx], term))
+
+    def url_search_modified(self, text):
+        """Call open_url again on modified path.
+        """
+        try:
+            self.view.run_command('open_url', {'url': text})
+        except ValueError:
+            pass
 
     def file_action(self, path):
         """Asks user if they'd like to edit or run the file.
@@ -137,8 +163,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             raise 'unsupported action'
 
     def folder_action(self, folder):
-        openers = self.config.get('directory_open_commands', {})
-        opts = ['reveal', 'add to project', 'new window'] + [opener.get('label') for opener in openers]
+        openers = self.config.get('directory_open_commands', [])
+        extra = self.config.get('directory_extra_commands', True)
+        extra = ['add to sublime project', 'new sublime window'] if extra else []
+
+        opts = ['reveal'] + extra + [opener.get('label') for opener in openers]
         sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, opts, folder))
 
     def folder_done(self, idx, opts, folder):
@@ -146,7 +175,12 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             return
         if idx == 0:
             self.reveal(folder)
-        elif idx == 1:
+            return
+
+        extra = self.config.get('directory_extra_commands', False)
+        if not extra:
+            idx += 2
+        if idx == 1:
             # add folder to project
             d = self.view.window().project_data()
             if not d:
@@ -155,36 +189,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                 d['folders'] = []
             d['folders'].append({'path': folder})
             self.view.window().set_project_data(d)
-        elif idx == 2:
+            return
+        if idx == 2:
             self.open_in_new_window(folder)
+            return
 
-        else:  # custom directory opener was used
-            openers = self.config.get('directory_open_commands', {})
-            idx = idx - 3
-            commands = openers[idx].get('commands')
-            subprocess.check_call(commands + [folder])
-
-    def modify_search_action(self, term):
-        searchers = self.config.get('web_searchers')
-        opts = ['modify url (%s)' % term]
-        urls = ['']
-        opts += [s['label'] for s in searchers]
-        urls += [s['url'] for s in searchers]
-        sublime.active_window().show_quick_panel(opts, lambda idx: self.web_search_done(idx, urls, term))
-
-    def web_search_done(self, idx, urls, term):
-        if idx == 0:
-            self.view.window().show_input_panel('URL or path:', term, self.url_search_modified, None, None)
-        elif idx > 0:
-            webbrowser.open_new_tab('{}{}'.format(urls[idx], term))
-
-    def url_search_modified(self, text):
-        """Call `open_url` again on modified path.
-        """
-        try:
-            self.view.run_command('open_url', {'url': text})
-        except ValueError:
-            pass
+        # custom directory opener was used
+        openers = self.config.get('directory_open_commands', {})
+        idx = idx - 3
+        commands = openers[idx].get('commands')
+        subprocess.check_call(commands + [folder])
 
     def reveal(self, path):
         spec = {
@@ -210,9 +224,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         if shell is None:
             shell = not isinstance(args, list)
 
-        def callsubproc(self, args, shell):
+        def callsubproc(args, shell):
             subprocess.call(args, shell=shell)
-        threading.Thread(target=self.callsubproc, args=(args, shell)).start()
+        threading.Thread(target=callsubproc, args=(args, shell)).start()
 
     def runfile(self, autoinfo, path):
         plat = platform.system()
