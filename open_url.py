@@ -8,15 +8,12 @@ import re
 import os
 import subprocess
 import platform
+from urllib.parse import urlparse
 
 from .domains import domains
 
 
 def prepend_scheme(s):
-	try:
-		from urllib.parse import urlparse
-	except ImportError:
-		from urlparse import urlparse
 	o = urlparse(s)
 	if not o.scheme:
 		s = 'http://' + s
@@ -49,7 +46,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	def get_selection(self):
 		"""Returns selection. If selection contains no characters, expands it
-		until hitting terminator (delimeter) chars.
+		until hitting delimiter chars.
 		"""
 		s = self.view.sel()[0]
 
@@ -61,7 +58,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		# nothing is selected, so expand selection to nearest delimeters
 		view_size = self.view.size()
-		delimeters = list(self.config.get('terminators'))
+		delimeters = list(self.config.get('delimiters'))
 
 		# move the selection back to the start of the url
 		while start > 0:
@@ -123,8 +120,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			webbrowser.open_new_tab('{}{}'.format(urls[idx], term))
 
 	def folder_action(self, folder):
-		openers = self.config.get('directory_open_commands', [])
-		extra = self.config.get('directory_extra_commands', True)
+		openers = self.config.get('folder_custom_commands', [])
+		extra = self.config.get('folder_extra_commands', True)
 		extra = ['add to sublime project', 'new sublime window'] if extra else []
 
 		opts = ['reveal'] + extra + [opener.get('label') for opener in openers]
@@ -137,7 +134,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.reveal(folder)
 			return
 
-		extra = self.config.get('directory_extra_commands', False)
+		extra = self.config.get('folder_extra_commands', True)
 		if not extra:
 			idx += 2
 
@@ -153,7 +150,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.open_in_new_window(folder)
 
 		else:  # custom opener was used
-			openers = self.config.get('directory_open_commands', [])
+			openers = self.config.get('folder_custom_commands', [])
 			commands = openers[idx-3].get('commands')
 			self.run_subprocess(commands + [folder])
 
@@ -211,7 +208,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		# either show a menu or perform the action
 		if action == 'menu':
-			openers = self.config.get('file_open_commands', [])
+			openers = self.config.get('file_custom_commands', [])
 			extra = self.config.get('file_extra_commands', True)
 			extra = ['run', 'new sublime window', 'system open'] if extra else []
 			sublime.active_window().show_quick_panel(
@@ -275,7 +272,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.reveal(path)
 			return
 
-		extra = self.config.get('directory_extra_commands', False)
+		extra = self.config.get('file_extra_commands', True)
 		if not extra:
 			idx += 3
 
@@ -287,7 +284,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.system_open(path)
 
 		else:  # custom opener was used
-			openers = self.config.get('file_open_commands', [])
+			openers = self.config.get('file_custom_commands', [])
 			commands = openers[idx-5].get('commands')
 			self.run_subprocess(commands + [path])
 

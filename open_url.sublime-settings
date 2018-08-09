@@ -1,43 +1,36 @@
 // to specify your own, either edit this file, or copy/paste to open_url.sublime-settings file in your User folder
 // if there is an open_url.sublime-settings in the User folder, Sublime Text merges those settings with these
 {
-  // delimiters for expanding selection, these are optimized for markdown syntax
-  "terminators": " \t\n\r\"'`,*<>[]()",
+  // delimiters for expanding selection, these are markdown friendly
+  "delimiters": " \t\n\r\"'`,*<>[]()",
 
   // if URL is neither a local file nor a web URL, pass it to a web searcher
   "web_searchers": [
     { "label": "google search", "url": "http://google.com/search?q=" },
   ],
 
-  // set to false if you want to disable these commands: ('add to sublime project', 'new sublime window')
-  "directory_extra_commands": true,
-
-  // pass a directory to any of these shell commands, run in a subprocess
-  "directory_open_commands": [
-    // { "label": "terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] },
+  // pass a file to any of these shell commands, run in a subprocess
+  "file_custom_commands": [
   ],
 
-  // set to false if you want to disable these commands: ('run', 'new sublime window', 'system open')
+  // pass a folder to any of these shell commands, run in a subprocess
+  "folder_custom_commands": [
+    // { "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] },
+  ],
+
+  // set to false if you want to disable the following commands: ('run', 'new sublime window', 'system open')
   "file_extra_commands": true,
 
-  "file_open_commands": [
-    // { "label": "terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] },
-  ],
+  // set to false if you want to disable the following commands: ('add to sublime project', 'new sublime window')
+  "folder_extra_commands": true,
 
-  // action=run,edit,menu: if you choose to run a file, you can specify how to run it
-  // os=mac,win,lnx,any,psx
-  // mac = Darwin Mac OSX
-  // win = Windows
-  // lnx = Linux like Ubuntu
-  // psx = Any posix system, like OSX or Linux
+  // action=run,edit,menu: platform-specific/file-extension-specific shortcuts for working with files
+  // os is one of {mac, win, lnx, any, psx}
   // on mac, you can specify "app" open with a specific application, like "open -a <app> <file>"
-  // on any, you can specify "openwith" (not to combine with "app") which runs the openwith command then the file, like "<openwith> <file>"
+  // on any, you can specify "openwith" (not to combine with "app") which passes the file to the openwith command
   "autoactions": [
-    { "os": "win", "endswith": [".exe", ".com"], "action": "run" },
-    { "os": "win", "endswith": [".bat", ".cmd"], "action": "menu", "terminal": true, "pause": true },
-    { "os": "mac", "endswith": [".sublime-project"], "action": "run", "app": "Sublime Text" },
-    { "os": "lnx", "endswith": [".sublime-project"], "action": "run", "openwith": "subl" },
-    { "os": "psx", "endswith": [".sh"], "action": "menu", "openwith": "sh", "terminal": true, "pause": true },
-    { "os": "any", "endswith": [".txt", ".config", ".md", ".log", ".sublime-settings"], "action": "edit" },
+    // { "os": "win", "endswith": [".exe", ".com"], "action": "run" },
+    // { "os": "win", "endswith": [".bat", ".cmd"], "action": "menu", "terminal": true, "pause": true },
+    // { "os": "any", "endswith": [".txt", ".md"], "action": "edit" },
   ],
 }
