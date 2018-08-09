@@ -41,7 +41,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		if re.search(r"\w[^\s]*\.(?:%s)[^\s]*\Z" % domains, url, re.IGNORECASE):
 			url = prepend_scheme(url)
-			webbrowser.open_new_tab(url)
+			self.open_tab(url)
 		else:
 			self.modify_or_search_action(url)
 
@@ -103,6 +103,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			subprocess.check_call(args, shell=not isinstance(args, list))
 		threading.Thread(target=sp, args=(args,)).start()
 
+	def open_tab(self, url):
+		browser = self.config.get('web_browser', "")
+		try:
+			controller = webbrowser.get(browser or None)
+		except:
+			e = 'Python couldn\'t find the "{}" browser on your machine. Change "web_browser" in Open URL\'s settings.'
+			sublime.error_message(e.format(browser or 'default'))
+			return
+		controller.open_new_tab(url)
+
 	def modify_or_search_action(self, term):
 		"""Not a URL and not a local path; prompts user to modify path and looks
 		for it again, or searches for this term using a web searcher.
@@ -120,7 +130,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			return
 		idx -= 1
 		searcher = searchers[idx]
-		webbrowser.open_new_tab('{}{}'.format(
+		self.open_tab('{}{}'.format(
 			searcher.get('url'),
 			quote(term.encode(searcher.get('encoding', 'utf-8'))),
 		))

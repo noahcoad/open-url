@@ -4,6 +4,10 @@
   // delimiters for expanding selection, these are markdown friendly
   "delimiters": " \t\n\r\"'`,*<>[](){}",
 
+  // the browser that Open URL uses to open new tabs
+  // it can be an empty string, or a string [from this list](https://docs.python.org/3.3/library/webbrowser.html)
+  "web_browser": "",
+
   // if URL is neither a local file nor a web URL, pass it to a web searcher
   "web_searchers": [
     { "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" },
