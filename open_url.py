@@ -105,13 +105,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	def open_tab(self, url):
 		browser = self.config.get('web_browser', "")
-		try:
-			controller = webbrowser.get(browser or None)
-		except:
-			e = 'Python couldn\'t find the "{}" browser on your machine. Change "web_browser" in Open URL\'s settings.'
-			sublime.error_message(e.format(browser or 'default'))
-			return
-		controller.open_new_tab(url)
+
+		def ot(url, browser):
+			try:
+				controller = webbrowser.get(browser or None)
+			except:
+				e = 'Python couldn\'t find the "{}" browser on your machine. Change "web_browser" in Open URL\'s settings.'
+				sublime.error_message(e.format(browser or 'default'))
+				return
+			controller.open_new_tab(url)
+		threading.Thread(target=ot, args=(url, browser)).start()
 
 	def modify_or_search_action(self, term):
 		"""Not a URL and not a local path; prompts user to modify path and looks
