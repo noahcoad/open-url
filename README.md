@@ -6,7 +6,7 @@ Quickly open files, folders, or web URLs from anywhere in Sublime Text.
 
 
 ## Install
-Look for `open-url` using the [Package Manager](http://wbond.net/sublime_packages/package_control)
+Look for __Open URL__ using the [Package Manager](http://wbond.net/sublime_packages/package_control)
 
 
 ## How to use
@@ -36,13 +36,13 @@ If your selection is a __file__ or a __folder__, you can choose to __edit__ it (
 
 Opening files and folders is super convenient. Both can be specified with absolute paths, paths relative to the currently open file, or paths relative to the root of the currently open project. Env vars and the alias `~` are expanded.
 
-If your selection is a URL, it opens immediately in a new tab in your default web browser. You can omit the scheme (http://) if you want and `open-url` will add it for you.
+If your selection is a URL, it opens immediately in a new tab in your default web browser. You can omit the scheme (http://) if you want and __Open URL__ will add it for you.
 
 If your selection is none of the above, you'll be presented with two options:
 
 - modify the selection and try again
 - search for the selection using one of your configured __web_searchers__
-  + the only web searcher that ships with `open-url` is Google search
+  + the only web searcher that ships with __Open URL__ is Google search
   + to add others, read more in the "Settings" section below
 
 
@@ -57,7 +57,7 @@ This will open files in Sublime Text for editing, or reveal folders in the Finde
 
 
 ### Running commands on files or folders
-`open-url` provides a few settings you can configure to run custom commands on files or folders:
+__Open URL__ provides a few settings you can configure to run custom commands on files or folders:
 
 - __folder_custom_commands__
 - __file_custom_commands__
