@@ -1,0 +1,5 @@
+*.sublime-project
+*.sublime-workspace
+*.pyc
+*-MarkdownPadPreview.html
+sandbox/*
