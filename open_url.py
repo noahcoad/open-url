@@ -9,6 +9,7 @@ import os
 import subprocess
 import platform
 from urllib.parse import urlparse
+from urllib.parse import quote
 
 from .domains import domains
 
@@ -106,18 +107,23 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		"""Not a URL and not a local path; prompts user to modify path and looks
 		for it again, or searches for this term using a web searcher.
 		"""
-		searchers = self.config.get('web_searchers')
+		searchers = self.config.get('web_searchers', [])
 		opts = ['modify path ({})'.format(term)]
-		urls = ['']
 		opts += ['{} ({})'.format(s['label'], term) for s in searchers]
-		urls += [s['url'] for s in searchers]
-		sublime.active_window().show_quick_panel(opts, lambda idx: self.web_search_done(idx, urls, term))
+		sublime.active_window().show_quick_panel(opts, lambda idx: self.modify_or_search_done(idx, searchers, term))
 
-	def web_search_done(self, idx, urls, term):
+	def modify_or_search_done(self, idx, searchers, term):
+		if idx < 0:
+			return
 		if idx == 0:
 			self.view.window().show_input_panel('URL or path:', term, self.url_search_modified, None, None)
-		elif idx > 0:
-			webbrowser.open_new_tab('{}{}'.format(urls[idx], term))
+			return
+		idx -= 1
+		searcher = searchers[idx]
+		webbrowser.open_new_tab('{}{}'.format(
+			searcher.get('url'),
+			quote(term.encode(searcher.get('encoding', 'utf-8'))),
+		))
 
 	def folder_action(self, folder):
 		openers = self.config.get('folder_custom_commands', [])

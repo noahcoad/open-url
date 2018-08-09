@@ -64,7 +64,7 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   + the default settings are Markdown friendly
 - __web_searchers__
   + if your selection isn't a file, a folder, or a URL, you can choose to pass it to a web searcher, which is just a URL that searches for the selected text
-  + example: `{ "label": "google search", "url": "http://google.com/search?q=" }`
+  + example: `{ "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" }`
 - __file_custom_commands__
   + pass a file to any of these shell commands, run in a subprocess
 - __folder_custom_commands__

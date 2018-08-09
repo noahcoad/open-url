@@ -6,7 +6,7 @@
 
   // if URL is neither a local file nor a web URL, pass it to a web searcher
   "web_searchers": [
-    { "label": "google search", "url": "http://google.com/search?q=" },
+    { "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" },
   ],
 
   // pass a file to any of these shell commands, run in a subprocess
