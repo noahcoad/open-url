@@ -46,6 +46,16 @@ If your selection is none of the above, you'll be presented with two options:
   + to add others, read more in the "Settings" section below
 
 
+### Shortcuts
+Don't want to choose from menu items to open a file or a folder? Look for __Open URL (Skip Menu)__ in the Command Palette. To create a key binding for this, open __Preferences: Key Bindings__ from the Command Palette, and add the following:
+
+~~~json
+{ "keys": ["your+key+binding"], "command": "open_url", "args": { "show_menu": false } },
+~~~
+
+This will open files in Sublime Text for editing, or reveal folders in the Finder, without showing the menu first.
+
+
 ### Running commands on files or folders
 `open-url` provides a few settings you can configure to run custom commands on files or folders:
 

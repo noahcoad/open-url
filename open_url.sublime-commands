@@ -7,5 +7,12 @@
       "default": "// settings in here override those in \"open-url/open_url.sublime-settings\",\n\n{\n\t$0\n}\n"
     }
   },
-	{ "caption": "Open URL", "command": "open_url" }
+
+	{ "caption": "Open URL", "command": "open_url" },
+
+	{
+    "caption": "Open URL (Skip Menu)",
+    "command": "open_url",
+    "args": { "show_menu": false }
+  }
 ]

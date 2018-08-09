@@ -22,7 +22,7 @@ def prepend_scheme(s):
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
-	def run(self, edit=None, url=None):
+	def run(self, edit=None, url=None, show_menu=True):
 		self.config = sublime.load_settings('open_url.sublime-settings')
 
 		# Sublime Text has its own open_url command used for things like Help > Documentation
@@ -32,11 +32,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		path = self.abs_path(url)
 
 		if os.path.isfile(path):
-			self.file_action(path)
+			self.file_action(path, show_menu)
 			return
 
 		if os.path.isdir(path):
-			self.folder_action(path)
+			self.folder_action(path, show_menu)
 			return
 
 		if re.search(r"\w[^\s]*\.(?:%s)[^\s]*\Z" % domains, url, re.IGNORECASE):
@@ -138,7 +138,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			quote(term.encode(searcher.get('encoding', 'utf-8'))),
 		))
 
-	def folder_action(self, folder):
+	def folder_action(self, folder, show_menu=True):
+		if not show_menu:
+			self.reveal(folder)
+			return
+
 		openers = self.config.get('folder_custom_commands', [])
 		extra = self.config.get('folder_extra_commands', True)
 		extra = ['add to sublime project', 'new sublime window'] if extra else []
@@ -199,9 +203,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		except ValueError:
 			pass
 
-	def file_action(self, path):
+	def file_action(self, path, show_menu=True):
 		"""Asks user if they'd like to edit or run the file.
 		"""
+		if not show_menu:
+			self.view.window().open_file(path)
+			return
+
 		action = 'menu'
 		autoinfo = None
 
