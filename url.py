@@ -6,4 +6,4 @@ domains = 'AAA|AARP|ABB|ABBOTT|ABBVIE|ABOGADO|ABUDHABI|AC|ACADEMY|ACCENTURE|ACCO
 
 
 def is_url(path):
-	return re.search(r"\w[^\s]*\.(?:%s)[^\s]*\Z" % domains, path, re.IGNORECASE)
+	return re.search(r"\w[^\s]*\.(?:%s)(/[^\s]*)?\Z" % domains, path, re.IGNORECASE)
