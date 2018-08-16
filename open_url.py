@@ -4,14 +4,13 @@ import sublime_plugin
 
 import webbrowser
 import threading
-import re
 import os
 import subprocess
 import platform
 from urllib.parse import urlparse
 from urllib.parse import quote
 
-from .domains import domains
+from .url import is_url
 
 
 def prepend_scheme(s):
@@ -39,9 +38,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.folder_action(path, show_menu)
 			return
 
-		if re.search(r"\w[^\s]*\.(?:%s)[^\s]*\Z" % domains, url, re.IGNORECASE):
-			url = prepend_scheme(url)
-			self.open_tab(url)
+		if is_url(url):
+			self.open_tab(prepend_scheme(url))
 		else:
 			self.modify_or_search_action(url)
 
