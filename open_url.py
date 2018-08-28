@@ -33,24 +33,19 @@ def remove_trailing_delimiter(url, trailing_delimiters):
 		The input url with the trailing delimiting characters removed; if any
 		are found.
 	"""
-	# If no trailing_delimiters are present, then we can simply return the url.
 	if not trailing_delimiters:
 		return url
-	# Go over characters from he end of the URL until we don't find a trailing
-	# delimiter character.
-	loop = True
-	while loop and url:
+	while url:
 		if url[-1] in trailing_delimiters:
 			url = url[:-1]
 		else:
-			loop = False
+			break
 	return url
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
 	def run(self, edit=None, url=None, show_menu=True):
 		self.config = sublime.load_settings('open_url.sublime-settings')
-		trailing_delimiters = self.config.get('trailing_delimiters')
 
 		# Sublime Text has its own open_url command used for things like Help > Documentation
 		# so if a url is passed, open it instead of getting text from the view
@@ -68,7 +63,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		if is_url(url):
 			url = prepend_scheme(url)
-			url = remove_trailing_delimiter(url, trailing_delimiters)
+			url = remove_trailing_delimiter(url, self.config.get('trailing_delimiters'))
 			self.open_tab(url)
 		else:
 			self.modify_or_search_action(url)
