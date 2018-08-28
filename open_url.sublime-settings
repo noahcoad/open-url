@@ -16,13 +16,19 @@
     { "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" },
   ],
 
-  // pass a file to any of these shell commands, run in a subprocess
+  // pass file that matches regex "pattern" to shell commands, run in a subprocess
   "file_custom_commands": [
+    // { "label": "open with default application", "pattern": "\\.pdf$|\\.png$", "commands": [ "open" ] },
   ],
 
   // pass a folder to any of these shell commands, run in a subprocess
   "folder_custom_commands": [
     // { "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] },
+  ],
+
+  // pass other URL that matches regex "pattern" to shell commands, run in a subprocess
+  "other_custom_commands": [
+    // { "label": "open with transmit", "pattern": "^ftp://", "commands": [ "open", "-a", "/Applications/Transmit.app" ] },
   ],
 
   // set to false if you want to disable the following commands: ('run', 'new sublime window', 'system open')

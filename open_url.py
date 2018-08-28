@@ -5,6 +5,7 @@ import sublime_plugin
 import webbrowser
 import threading
 import os
+import re
 import subprocess
 import platform
 from urllib.parse import urlparse
@@ -65,8 +66,18 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			url = prepend_scheme(url)
 			url = remove_trailing_delimiter(url, self.config.get('trailing_delimiters'))
 			self.open_tab(url)
-		else:
-			self.modify_or_search_action(url)
+			return
+
+		openers = []
+		for opener in self.config.get('other_custom_commands'):
+			pattern = opener.get('pattern')
+			if pattern and re.search(pattern, url):
+				openers.append(opener)
+		if openers:
+			self.other_action(url, openers)
+			return
+
+		self.modify_or_search_action(url)
 
 	def get_selection(self):
 		"""Returns selection. If selection contains no characters, expands it
@@ -159,6 +170,17 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			searcher.get('url'),
 			quote(term.encode(searcher.get('encoding', 'utf-8'))),
 		))
+
+	def other_action(self, path, openers):
+		opts = [opener.get('label') for opener in openers]
+		sublime.active_window().show_quick_panel(opts, lambda idx: self.other_done(idx, opts, path))
+
+	def other_done(self, idx, opts, path):
+		if idx < 0:
+			return
+		openers = self.config.get('other_custom_commands', [])
+		commands = openers[idx].get('commands')
+		self.run_subprocess(commands + [path])
 
 	def folder_action(self, folder, show_menu=True):
 		if not show_menu:
@@ -257,7 +279,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		# either show a menu or perform the action
 		if action == 'menu':
-			openers = self.config.get('file_custom_commands', [])
+			openers = []
+			for opener in self.config.get('file_custom_commands'):
+				pattern = opener.get('pattern')
+				if pattern and re.search(pattern, path):
+					openers.append(opener)
 			extra = self.config.get('file_extra_commands', True)
 			extra = ['run', 'new sublime window', 'system open'] if extra else []
 			sublime.active_window().show_quick_panel(
