@@ -4,6 +4,10 @@
   // delimiters for expanding selection, these are markdown friendly
   "delimiters": " \t\n\r\"'`,*<>[](){}",
 
+  // If these delimiting characters are seen at the end of the URL, they are removed. The trailing delimiters are removed iteratively,
+  // so sublimetext.com.; will become sublimetext.com .
+  "trailing_delimiters": ";.:",
+
   // the browser that Open URL uses to open new tabs
   // it can be an empty string, or a string [from this list](https://docs.python.org/3.3/library/webbrowser.html)
   "web_browser": "",

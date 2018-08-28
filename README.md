@@ -72,6 +72,8 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
 - __delimeters__
   + characters at which auto-expansion of selected path stops, e.g. ` \t\n\r\"',*<>[]()`
   + the default settings are Markdown friendly
+- __trailing_delimiters__
+  + if any of these characters are seen at the end of the URL, they are recursively removed, default `;.:`
 - __web_browser__
   + the browser that Open URL uses to open new tabs; must be a string [from this list](https://docs.python.org/3.3/library/webbrowser.html)
   + if you use an empty string, the "default browser" will be used
