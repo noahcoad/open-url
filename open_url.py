@@ -89,9 +89,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if project is None:  # nothing more to try
 			return path
 		try:  # look for file relative to project root
-			return os.path.join(project['folders'][0]['path'], path)
+			return os.path.join(os.path.expanduser(project['folders'][0]['path']), path)
 		except (KeyError, IndexError):
-
 			return path
 
 	def run_subprocess(self, args):
