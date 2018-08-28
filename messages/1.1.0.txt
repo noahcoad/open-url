@@ -91,7 +91,7 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   + pass a folder to any of these shell commands; run in a subprocess
   + example: `{ "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] }`
 - __other_custom_commands__
-  + pass a URL which is neither a file, a directory, nor a web URL to one or more shel commands whose patterns match the URL; run in a subprocess
+  + pass a URL which is neither a file, a folder, nor a web URL to one or more shel commands whose patterns match the URL; run in a subprocess
   + e.g., for opening FTP URLs: `{ "label": "open with filezilla", "pattern": "^ftp://", "commands": [ "open", "-a", "/Applications/FileZilla.app" ] },`
 - __folder_extra_commands__
   + set to this to `false` if you want to disable the following folder commands: ('add to sublime project', 'new sublime window')

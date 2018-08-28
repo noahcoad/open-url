@@ -22,17 +22,7 @@ def prepend_scheme(s):
 
 
 def remove_trailing_delimiter(url, trailing_delimiters):
-	"""Removes trailing delimiters.
-
-	Args:
-		url: A url that could potentially have some trailing characters that
-			need to be removed.
-		trailing_delimiters: A string of characters that should not be seen at
-			the end of a URL.
-
-	Returns:
-		The input url with the trailing delimiting characters removed; if any
-		are found.
+	"""Removes any and all chars in trailing_delimiters from end of url.
 	"""
 	if not trailing_delimiters:
 		return url

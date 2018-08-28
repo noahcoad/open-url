@@ -28,7 +28,7 @@
 
   // pass other URL that matches regex "pattern" to shell commands, run in a subprocess
   "other_custom_commands": [
-    // { "label": "open with transmit", "pattern": "^ftp://", "commands": [ "open", "-a", "/Applications/Transmit.app" ] },
+    // { "label": "open with filezilla", "pattern": "^ftp://", "commands": [ "open", "-a", "/Applications/FileZilla.app" ] },
   ],
 
   // set to false if you want to disable the following commands: ('run', 'new sublime window', 'system open')
