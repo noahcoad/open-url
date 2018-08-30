@@ -38,7 +38,7 @@ Opening files and folders is super convenient. Both can be specified with absolu
 
 If your selection is a URL, it opens immediately in a new tab in your default web browser. You can omit the scheme (http://) if you want and __Open URL__ will add it for you.
 
-If your selection is none of the above, you'll be presented with two options:
+If your selection is none of the above, and you haven't configured custom commands for special URLs using `other_custom_commands`, you'll be presented with two options:
 
 - modify the selection and try again
 - search for the selection using one of your configured __web_searchers__
@@ -57,13 +57,33 @@ This will open files in Sublime Text for editing, or reveal folders in the Finde
 
 
 ### Running commands on files, folders or special URLs
-__Open URL__ provides a few settings you can configure to run custom commands on files, folders, or special URLs, such as FTP URLs:
+__Open URL__ provides a few settings you can configure to run custom commands on files, folders, or special URLs that are neither files, folders, nor web URLs, such as FTP URLs:
 
 - __file_custom_commands__
 - __folder_custom_commands__
-- __other_custom_commands__
+- __other_custom_commands__ (for special URLs)
 
-Read more below.
+Commands are run in a separate thread using Python's [subprocess.check_call](https://docs.python.org/3.5/library/subprocess.html#subprocess.check_call) function. Here's [its signature](https://docs.python.org/3.5/library/subprocess.html#popen-constructor).
+
+The custom command settings should point to an array of object literals that can have up to 5 properties:
+
+- `label`, __required__: the label for the command in the dropdown menu
+- `commands` __required__: an array of shell arguments that come before the URL
+- `pattern`, __optional__: the command only appears if the URL matches this pattern `(optional)`
+- `os` __optional__: the command only appears for this OS; one of `('osx', 'windows', 'linux')`
+- `kwargs`, __optional__: kwargs that are passed to [subprocess.Popen](https://docs.python.org/3.5/library/subprocess.html#popen-constructor)
+
+For example, the __reveal__ command uses the following `file_custom_commands`.
+
+~~~json
+"file_custom_commands": [
+  { "label": "reveal", "os": "osx", "commands": ["open", "-R"] },
+  { "label": "reveal", "os": "windows", "commands": ["explorer", "/select,"] },
+  { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
+],
+~~~
+
+Check the __Settings__ section, or run __Open URL: Settings__ for examples.
 
 
 ## Settings
@@ -82,18 +102,13 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   + if your selection isn't a file, a folder, or a URL, you can choose to pass it to a web searcher, which is just a URL that searches for the selected text
   + example: `{ "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" }`
 - __file_custom_commands__
-  + pass a file to one or more shell commands whose patterns match the file path to shell commands; run in a subprocess
-  + example: `{ "label": "open with default app", "pattern": "\\.pdf$|\\.png$", "commands": [ "open" ] },`
+  + pass a file to shell commands whose pattern matches the file path
 - __folder_custom_commands__
-  + pass a folder to any of these shell commands; run in a subprocess
-  + example: `{ "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] }`
+  + pass a folder to shell commands whose pattern matches the folder path
+  + example, for opening the folder in iTerm: `{ "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] }`
 - __other_custom_commands__
-  + pass a URL which is neither a file, a folder, nor a web URL to one or more shel commands whose patterns match the URL; run in a subprocess
-  + e.g., for opening FTP URLs: `{ "label": "open with filezilla", "pattern": "^ftp://", "commands": [ "open", "-a", "/Applications/FileZilla.app" ] },`
-- __folder_extra_commands__
-  + set to this to `false` if you want to disable the following folder commands: ('add to sublime project', 'new sublime window')
-- __file_extra_commands__
-  + set to this to `false` if you want to disable the following file commands: ('run', 'new sublime window', 'system open')
+  + pass a URL which is neither a file, a folder, nor a web URL to shell commands whose pattern matches the URL
+  + example, for opening FTP URLs: `{ "label": "open with filezilla", "pattern": "^ftp://", "commands": [ "open", "-a", "/Applications/FileZilla.app" ] },`
 
 
 ## Finally

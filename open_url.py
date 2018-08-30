@@ -1,4 +1,4 @@
-# Open URL opens selected URLs, files, folders, or looks up text in web searcher
+# Quickly open files, folders, web URLs or other URLs from anywhere in Sublime Text
 import sublime
 import sublime_plugin
 
@@ -7,7 +7,6 @@ import threading
 import os
 import re
 import subprocess
-import platform
 from urllib.parse import urlparse
 from urllib.parse import quote
 
@@ -21,7 +20,7 @@ def prepend_scheme(s):
 	return s
 
 
-def remove_trailing_delimiter(url, trailing_delimiters):
+def remove_trailing_delimiters(url, trailing_delimiters):
 	"""Removes any and all chars in trailing_delimiters from end of url.
 	"""
 	if not trailing_delimiters:
@@ -32,6 +31,20 @@ def remove_trailing_delimiter(url, trailing_delimiters):
 		else:
 			break
 	return url
+
+
+def match_openers(openers, url):
+	ret = []
+	platform = sublime.platform()
+	for opener in openers:
+		pattern = opener.get('pattern')
+		o_s = opener.get('os')
+		if pattern and not re.search(pattern, url):
+			continue
+		if o_s and not o_s.lower() == platform:
+			continue
+		ret.append(opener)
+	return ret
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
@@ -52,19 +65,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.folder_action(path, show_menu)
 			return
 
-		if is_url(url):
-			url = prepend_scheme(url)
-			url = remove_trailing_delimiter(url, self.config.get('trailing_delimiters'))
-			self.open_tab(url)
+		clean = remove_trailing_delimiters(url, self.config.get('trailing_delimiters'))
+		if is_url(clean):
+			self.open_tab(prepend_scheme(clean))
 			return
 
-		openers = []
-		for opener in self.config.get('other_custom_commands'):
-			pattern = opener.get('pattern')
-			if pattern and re.search(pattern, url):
-				openers.append(opener)
+		openers = match_openers(self.config.get('other_custom_commands'), url)
 		if openers:
-			self.other_action(url, openers)
+			self.other_action(url, openers, show_menu)
 			return
 
 		self.modify_or_search_action(url)
@@ -99,9 +107,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		return self.view.substr(sublime.Region(start, end)).strip()
 
 	def abs_path(self, path):
-		"""Attempts to convert path into absolute path.
+		"""Normalizes path, and attempts to convert path into absolute path.
 		"""
-		path = os.path.expandvars(os.path.expanduser(path))
+		path = os.path.normcase(os.path.expandvars(os.path.expanduser(path)))
 		if os.path.isabs(path):
 			return path
 
@@ -119,21 +127,21 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		except (KeyError, IndexError):
 			return path
 
-	def run_subprocess(self, args):
+	def run_subprocess(self, args, kwargs):
 		"""Runs on another thread to avoid blocking main thread.
 		"""
-		def sp(args):
-			subprocess.check_call(args, shell=not isinstance(args, list))
-		threading.Thread(target=sp, args=(args,)).start()
+		def sp(args, kwargs):
+			subprocess.check_call(args, **kwargs)
+		threading.Thread(target=sp, args=(args, kwargs)).start()
 
 	def open_tab(self, url):
-		browser = self.config.get('web_browser', "")
+		browser = self.config.get('web_browser', '')
 
 		def ot(url, browser):
 			try:
 				controller = webbrowser.get(browser or None)
 			except:
-				e = 'Python couldn\'t find the "{}" browser on your machine. Change "web_browser" in Open URL\'s settings.'
+				e = 'Python couldn\'t find the "{}" browser. Change "web_browser" in Open URL\'s settings.'
 				sublime.error_message(e.format(browser or 'default'))
 				return
 			controller.open_new_tab(url)
@@ -161,74 +169,6 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			quote(term.encode(searcher.get('encoding', 'utf-8'))),
 		))
 
-	def other_action(self, path, openers):
-		opts = [opener.get('label') for opener in openers]
-		sublime.active_window().show_quick_panel(opts, lambda idx: self.other_done(idx, opts, path))
-
-	def other_done(self, idx, opts, path):
-		if idx < 0:
-			return
-		openers = self.config.get('other_custom_commands', [])
-		commands = openers[idx].get('commands')
-		self.run_subprocess(commands + [path])
-
-	def folder_action(self, folder, show_menu=True):
-		if not show_menu:
-			self.reveal(folder)
-			return
-
-		openers = self.config.get('folder_custom_commands', [])
-		extra = self.config.get('folder_extra_commands', True)
-		extra = ['add to sublime project', 'new sublime window'] if extra else []
-
-		opts = ['reveal'] + extra + [opener.get('label') for opener in openers]
-		sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, opts, folder))
-
-	def folder_done(self, idx, opts, folder):
-		if idx < 0:
-			return
-		if idx == 0:
-			self.reveal(folder)
-			return
-
-		extra = self.config.get('folder_extra_commands', True)
-		if not extra:
-			idx += 2
-
-		if idx == 1:  # add folder to project
-			d = self.view.window().project_data()
-			if not d:
-				d = {}
-			if 'folders' not in d:
-				d['folders'] = []
-			d['folders'].append({'path': folder})
-			self.view.window().set_project_data(d)
-		elif idx == 2:
-			self.open_in_new_window(folder)
-
-		else:  # custom opener was used
-			openers = self.config.get('folder_custom_commands', [])
-			commands = openers[idx-3].get('commands')
-			self.run_subprocess(commands + [folder])
-
-	def reveal(self, path):
-		spec = {
-			'dir': {'Darwin': ['open'], 'Windows': ['explorer'], 'Linux': ['nautilus', '--browser']},
-			'file': {
-				'Darwin': ['open', '-R'],
-				'Windows': ['explorer', '/select,"<path>"'],
-				'Linux': ['nautilus', '--browser'],
-			}
-		}
-		if not platform.system() in spec['dir']:
-			raise 'unsupported os'
-		args = spec['dir' if os.path.isdir(path) else 'file'][platform.system()]
-		if '<path>' in args[-1:]:
-			args[-1:] = args[-1:].replace('<path>', path)
-		else:
-			args.append(path)
-		subprocess.Popen(args)
-
 	def url_search_modified(self, text):
 		"""Call open_url again on modified path.
 		"""
@@ -237,157 +177,62 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		except ValueError:
 			pass
 
-	def file_action(self, path, show_menu=True):
-		"""Asks user if they'd like to edit or run the file.
+	def other_action(self, path, openers, show_menu):
+		if openers and not show_menu:
+			self.folder_done(0, openers, path)
+			return
+
+		opts = [opener.get('label') for opener in openers]
+		sublime.active_window().show_quick_panel(opts, lambda idx: self.other_done(idx, openers, path))
+
+	def other_done(self, idx, openers, path):
+		if idx < 0:
+			return
+		opener = openers[idx]
+		self.run_subprocess(opener.get('commands', []) + [path], opener.get('kwargs', {}))
+
+	def folder_action(self, folder, show_menu):
+		"""Choose from folder actions.
 		"""
+		openers = self.config.get('folder_custom_commands', [])
+
+		if openers and not show_menu:
+			self.folder_done(0, openers, folder)
+			return
+
+		opts = [opener.get('label') for opener in openers]
+		sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, openers, folder))
+
+	def folder_done(self, idx, openers, folder):
+		if idx < 0:
+			return
+		opener = openers[idx]
+		if sublime.platform() == 'windows':
+			folder = os.path.normcase(folder)
+		self.run_subprocess(opener.get('commands', []) + [folder], opener.get('kwargs', {}))
+
+	def file_action(self, path, show_menu):
+		"""Edit file or choose from file actions.
+		"""
+		openers = match_openers(self.config.get('file_custom_commands'), path)
+
 		if not show_menu:
 			self.view.window().open_file(path)
 			return
 
-		action = 'menu'
-		autoinfo = None
+		sublime.active_window().show_quick_panel(
+			['edit'] + [opener.get('label') for opener in openers],
+			lambda idx: self.file_done(idx, openers, path),
+		)
 
-		# see if there's already an action defined for this file
-		for auto in self.config.get('autoactions'):
-			# see if this line applies to this opperating system
-			if 'os' in auto:
-				oscheck = auto['os'] == 'any' \
-					or (auto['os'] == 'win' and platform.system() == 'Windows') \
-					or (auto['os'] == 'lnx' and platform.system() == 'Linux') \
-					or (auto['os'] == 'mac' and platform.system() == 'Darwin') \
-					or (auto['os'] == 'psx' and (platform.system() == 'Darwin' or platform.system() == 'Linux'))
-			else:
-				oscheck = True
-
-			# if the line is for this OS, then check to see if we have a file pattern match
-			if oscheck:
-				for ending in auto['endswith']:
-					if (path.endswith(ending)):
-						action = auto['action']
-						autoinfo = auto
-						break
-
-		# either show a menu or perform the action
-		if action == 'menu':
-			openers = []
-			for opener in self.config.get('file_custom_commands'):
-				pattern = opener.get('pattern')
-				if pattern and re.search(pattern, path):
-					openers.append(opener)
-			extra = self.config.get('file_extra_commands', True)
-			extra = ['run', 'new sublime window', 'system open'] if extra else []
-			sublime.active_window().show_quick_panel(
-				['edit', 'reveal'] + extra + [opener.get('label') for opener in openers],
-				lambda idx: self.file_done(idx, autoinfo, path),
-			)
-		elif action == 'edit':
-			self.file_done(0, autoinfo, path)
-		elif action == 'run':
-			self.file_done(1, autoinfo, path)
-		else:
-			raise 'unsupported action'
-
-	def runfile(self, autoinfo, path):
-		plat = platform.system()
-
-		# default methods to open files
-		defrun = {'Darwin': 'open', 'Windows': '', 'Linux': 'mimeopen'}
-		if plat not in defrun:
-			raise 'unsupported os'
-
-		# check if there are special instructions to open this file
-		if autoinfo is None or 'openwith' not in autoinfo:
-			if autoinfo is not None and plat == 'Darwin' and 'app' in autoinfo:
-				cmd = "%s -a %s %s" % self.quote((defrun[plat], autoinfo['app'], path))
-			elif defrun[platform.system()]:
-				cmd = "%s %s" % self.quote((defrun[platform.system()], path))
-			else:
-				cmd = self.quote(path)
-		else:
-			cmd = "%s %s" % self.quote((autoinfo['openwith'], path))
-
-		# run command in a terminal and pause if desired
-		if autoinfo and 'terminal' in autoinfo and autoinfo['terminal']:
-			pause = 'pause' in autoinfo and autoinfo['pause']
-			xterm = {'Darwin': '/opt/X11/bin/xterm', 'Linux': '/usr/bin/xterm'}
-			if plat in xterm:
-				cmd = [xterm[plat], '-e', cmd + ('; read -p "Press [ENTER] to continue..."' if pause else '')]
-			elif os.name == 'nt':
-				# subprocess.call has an odd behavior on windows in that if a parameter contains quotes
-				# it tries to escape the quotes by adding a slash in front of each double quote
-				# so c:\temp\hello.bat if passed to subprocess.call as "c:\temp\hello.bat"
-				# will be passed to the OS as \"c:\temp\hello.bat\"
-				# echo Windows doesn't know how to interpret that, so we need to remove the double quotes,
-				# which breaks files with spaces in their path
-				cmd = [
-					'c:\\windows\\system32\\cmd.exe', '/c', '%s%s' % (cmd.replace('"', ''), ' & pause' if pause else '')
-				]
-			else:
-				raise 'unsupported os'
-
-		self.run_subprocess(cmd)
-
-	def file_done(self, idx, autoinfo, path):
+	def file_done(self, idx, openers, path):
 		if idx < 0:
 			return
 		if idx == 0:
 			self.view.window().open_file(path)
 			return
-		if idx == 1:
-			self.reveal(path)
-			return
 
-		extra = self.config.get('file_extra_commands', True)
-		if not extra:
-			idx += 3
-
-		if idx == 2:
-			self.runfile(autoinfo, path)
-		elif idx == 3:
-			self.open_in_new_window(path)
-		elif idx == 4:
-			self.system_open(path)
-
-		else:  # custom opener was used
-			openers = self.config.get('file_custom_commands', [])
-			commands = openers[idx-5].get('commands')
-			self.run_subprocess(commands + [path])
-
-	def system_open(self, path):
-		if sublime.platform() == 'osx':
-			args = ['open', path]
-		elif sublime.platform() == 'linux':
-			args = [path]
-		elif sublime.platform() == 'windows':
-			args = ['start', path]
-		else:
-			raise Exception('unsupported os')
-		subprocess.Popen(args, cwd=os.path.dirname(path))
-
-	def quote(self, stuff):
-		if isinstance(stuff, str):
-			return '"' + stuff + '"'
-		elif isinstance(stuff, list):
-			return [self.quote(x) for x in stuff]
-		elif isinstance(stuff, tuple):
-			return tuple(self.quote(list(stuff)))
-		else:
-			raise 'unsupported type'
-
-	def open_in_new_window(self, path):
-		items = []
-
-		executable_path = sublime.executable_path()
-
-		if sublime.platform() == 'osx':
-			app_path = executable_path[:executable_path.rfind('.app/')+5]
-			executable_path = app_path + 'Contents/SharedSupport/bin/subl'
-
-		# build arguments
-		path = os.path.abspath(path)
-		items.append(executable_path)
-		if os.path.isfile(path):
-			items.append(os.path.dirname(path))
-		items.append(path)
-
-		subprocess.Popen(items, cwd=items[1])
+		opener = openers[idx-1]
+		if sublime.platform() == 'windows':
+			path = os.path.normcase(path)
+		self.run_subprocess(opener.get('commands', []) + [path], opener.get('kwargs', {}))
