@@ -66,7 +66,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			return
 
 		clean = remove_trailing_delimiters(url, self.config.get('trailing_delimiters'))
-		if is_url(clean):
+		if is_url(clean) or clean.startswith('http://') or clean.startswith('https://'):
 			self.open_tab(prepend_scheme(clean))
 			return
 
