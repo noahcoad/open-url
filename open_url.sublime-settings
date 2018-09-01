@@ -35,6 +35,9 @@
     { "label": "reveal", "os": "windows", "commands": ["explorer"] },
 
     { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
+
+    // { "label": "add to project", "os": "osx", "commands": ["open", "-a", "Sublime Text"] },
+    // { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"] },
   ],
 
   // pass other URL that matches regex "pattern" to shell commands

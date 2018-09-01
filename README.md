@@ -63,8 +63,6 @@ __Open URL__ provides a few settings you can configure to run custom commands on
 - __folder_custom_commands__
 - __other_custom_commands__ (for special URLs)
 
-Commands are run in a separate thread using Python's [subprocess.check_call](https://docs.python.org/3.5/library/subprocess.html#subprocess.check_call) function. Here's [its signature](https://docs.python.org/3.5/library/subprocess.html#popen-constructor).
-
 The custom command settings should point to an array of object literals that can have up to 5 properties:
 
 - `label`, __required__: the label for the command in the dropdown menu
@@ -73,13 +71,22 @@ The custom command settings should point to an array of object literals that can
 - `os` __optional__: the command only appears for this OS; one of `('osx', 'windows', 'linux')`
 - `kwargs`, __optional__: kwargs that are passed to [subprocess.Popen](https://docs.python.org/3.5/library/subprocess.html#popen-constructor)
 
-For example, the __reveal__ command uses the following `file_custom_commands`.
+For example, the __reveal__ command for files uses the following `file_custom_commands`.
 
 ~~~json
 "file_custom_commands": [
   { "label": "reveal", "os": "osx", "commands": ["open", "-R"] },
   { "label": "reveal", "os": "windows", "commands": ["explorer", "/select,"] },
   { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
+],
+~~~
+
+For another example, if you wanted to create OSX commands for adding a folder to the current project or for opening a folder in a new window, you could do something like this:
+
+~~~json
+"folder_custom_commands": [
+  { "label": "add to project", "os": "osx", "commands": ["open", "-a", "Sublime Text"] },
+  { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"] },
 ],
 ~~~
 
