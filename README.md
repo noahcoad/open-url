@@ -16,14 +16,14 @@ Alternatively, highlight the text you want to open. If text is highlighted the s
 
 Here's a bunch of ways you can run the command.
 
-- <kbd>ctrl+u</kbd>
+- <kbd>ctrl+u</kbd> (OSX), <kbd>ctrl+alt+u</kbd> (Linux/Windows)
 - right-click > __Open URL__
 - </kbd>alt</kbd> + double-click
 - <kbd>shift+cmd+p</kbd>, then look for __Open URL__
 
 
 ### Give it a try
-Copy the items below to Sublime Text. Place your cursor inside any one of them and hit <kbd>ctrl+u</kbd>.
+Copy the items below to Sublime Text. Place your cursor inside any one of them and hit <kbd>ctrl+u</kbd> for OSX, or <kbd>ctrl+alt+u</kbd> for Linux/Windows.
 
 - $HOME/Desktop
 - <https://news.ycombinator.com>

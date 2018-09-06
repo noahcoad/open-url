@@ -179,7 +179,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	def other_action(self, path, openers, show_menu):
 		if openers and not show_menu:
-			self.folder_done(0, openers, path)
+			self.other_done(0, openers, path)
 			return
 
 		opts = [opener.get('label') for opener in openers]
