@@ -136,8 +136,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	def open_tab(self, url):
 		browser = self.config.get('web_browser', '')
+		browser_path = self.config.get('web_browser_path', '')
 
-		def ot(url, browser):
+		def ot(url, browser, browser_path):
+			if browser_path:
+				if not webbrowser.get(browser_path).open(url):
+					sublime.error_message(
+						'Could not open tab using your "web_browser_path" setting: {}'.format(browser_path))
+				return
 			try:
 				controller = webbrowser.get(browser or None)
 			except:
@@ -145,7 +151,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 				sublime.error_message(e.format(browser or 'default'))
 				return
 			controller.open_new_tab(url)
-		threading.Thread(target=ot, args=(url, browser)).start()
+		threading.Thread(target=ot, args=(url, browser, browser_path)).start()
 
 	def modify_or_search_action(self, term):
 		"""Not a URL and not a local path; prompts user to modify path and looks

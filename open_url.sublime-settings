@@ -11,6 +11,15 @@
   // it can be an empty string, or a string [from this list](https://docs.python.org/3.3/library/webbrowser.html)
   "web_browser": "",
 
+  // the path to the executable that Open URL uses to open new tabs; overrides "web_browser"
+  "web_browser_path": "",
+  // example: chrome, osx
+  // "web_browser_path": "open -a /Applications/Google\\ Chrome.app %s"
+  // example: chrome, windows
+  // "web_browser_path": "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
+  // example: chrome, linux
+  // "web_browser_path": "/usr/bin/google-chrome %s"
+
   // if URL is neither a local file nor a web URL, pass it to a web searcher
   "web_searchers": [
     { "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" },

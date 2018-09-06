@@ -38,6 +38,8 @@ Opening files and folders is super convenient. Both can be specified with absolu
 
 If your selection is a URL, it opens immediately in a new tab in your default web browser. You can omit the scheme (http://) if you want and __Open URL__ will add it for you.
 
+>If Open URL fails to open a web URL, you might have to change the path to your web browser executable. See the __web_browser_path__ setting below.
+
 If your selection is none of the above, and you haven't configured custom commands for special URLs using `other_custom_commands`, you'll be presented with two options:
 
 - modify the selection and try again
@@ -105,6 +107,10 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   + the browser that Open URL uses to open new tabs; must be a string [from this list](https://docs.python.org/3.3/library/webbrowser.html)
   + if you use an empty string, the "default browser" will be used
   + if you choose a browser that's not installed on your machine, Open URL will complain
+- __web_browser_path__
+  + the path to your web browser executable for opening web URLs
+  + this setting overrides the default web browser and the __web_browser__ setting
+  + [read the top answer here](https://stackoverflow.com/questions/22445217/python-webbrowser-open-to-open-chrome-browser), or look in settings for examples
 - __web_searchers__
   + if your selection isn't a file, a folder, or a URL, you can choose to pass it to a web searcher, which is just a URL that searches for the selected text
   + example: `{ "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" }`
