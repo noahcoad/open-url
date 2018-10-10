@@ -1,11 +1,11 @@
 # Big News
-Open URL has a maintainer! @noahcoad is letting me continue development on the awesome Open URL plugin. In the last few weeks I've added a lot of new features.
+Open URL has another maintainer! @noahcoad is letting me continue development on the awesome Open URL plugin. In the last few months I've added a lot of new features.
 
 I'll also work to handle outstanding issues and merge pull requests, if they haven't been addressed by features that were added.
 
 Support for Sublime Text 2 has officially been dropped, which I hope will affect precisely none of you.
 
-Instead of trying to summarize the new stuff I just pasted the relevant parts of the README.
+Instead of trying to summarize the new stuff just have a look at the README: https://github.com/noahcoad/open-url
 
 Thanks and happy coding!
 @kylebebak
