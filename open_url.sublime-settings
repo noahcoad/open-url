@@ -28,13 +28,17 @@
   // pass file that matches regex "pattern" to shell commands
   "file_custom_commands": [
     { "label": "reveal", "os": "osx", "commands": ["open", "-R"] },
-    { "label": "open with default application", "os": "osx", "commands": [ "open" ] },
+    { "label": "open with default application", "os": "osx", "commands": ["open"] },
 
     { "label": "reveal", "os": "windows", "commands": ["explorer", "/select,"] },
-    { "label": "open with default application", "os": "windows", "commands": [ "start" ], "kwargs": {"shell": true} },
+    { "label": "open with default application", "os": "windows", "commands": ["start"], "kwargs": {"shell": true} },
 
     { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
     { "label": "open with default application", "os": "linux", "commands": [] },
+
+    // { "label": "copy path", "commands": "echo $url | pbcopy" },
+
+    // { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl", "-n"] },
   ],
 
   // pass folder that matches regex "pattern" to shell commands

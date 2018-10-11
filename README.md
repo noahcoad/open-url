@@ -68,7 +68,7 @@ __Open URL__ provides a few settings you can configure to run custom commands on
 The custom command settings should point to an array of object literals that can have up to 5 properties:
 
 - `label`, __required__: the label for the command in the dropdown menu
-- `commands` __required__: an array of shell arguments that come before the URL
+- `commands` __required__: an array or string of shell arguments to which the URL is appended; if this string contains the `$url` placeholder, this placeholder is replaced with the URL
 - `pattern`, __optional__: the command only appears if the URL matches this pattern `(optional)`
 - `os` __optional__: the command only appears for this OS; one of `('osx', 'windows', 'linux')`
 - `kwargs`, __optional__: kwargs that are passed to [subprocess.Popen](https://docs.python.org/3.5/library/subprocess.html#popen-constructor)
@@ -116,6 +116,7 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   + example: `{ "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" }`
 - __file_custom_commands__
   + pass a file to shell commands whose pattern matches the file path
+  + example, for copying the file path to the clipboard: `{ "label": "copy path", "commands": "echo $url | pbcopy" }`
 - __folder_custom_commands__
   + pass a folder to shell commands whose pattern matches the folder path
   + example, for opening the folder in iTerm: `{ "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] }`

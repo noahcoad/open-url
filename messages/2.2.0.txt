@@ -1,0 +1,7 @@
+# Bug Fix
+The "reveal" option doesn't appear 3 consecutive times for opening folders, because `folder_custom_commands` are now passed to `match_openers`.
+
+# New Feature
+The `commands` key in custom commands can now also be a string instead of just an array. If it's a string, the URL can be injected into it at any point by using the `$url` placeholder in the string; this placeholder is simply replaced with the URL.
+
+This makes it possible, for example, to use `pbcopy` to create a custom command for copying the full path of a file to the clipboard. Check the README for more information.

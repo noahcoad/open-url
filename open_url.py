@@ -127,6 +127,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		except (KeyError, IndexError):
 			return path
 
+	def prepare_args_and_run(self, opener, path):
+		commands = opener.get('commands', [])
+		kwargs = opener.get('kwargs', {})
+
+		if isinstance(commands, str):
+			kwargs['shell'] = True
+			if '$url' in commands:
+				self.run_subprocess(commands.replace('$url', path), kwargs)
+			else:
+				self.run_subprocess('{} {}'.format(commands, path), kwargs)
+		else:
+			self.run_subprocess(commands + [path], kwargs)
+
 	def run_subprocess(self, args, kwargs):
 		"""Runs on another thread to avoid blocking main thread.
 		"""
@@ -195,12 +208,12 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if idx < 0:
 			return
 		opener = openers[idx]
-		self.run_subprocess(opener.get('commands', []) + [path], opener.get('kwargs', {}))
+		self.prepare_args_and_run(opener, path)
 
 	def folder_action(self, folder, show_menu):
 		"""Choose from folder actions.
 		"""
-		openers = self.config.get('folder_custom_commands', [])
+		openers = match_openers(self.config.get('folder_custom_commands', []), folder)
 
 		if openers and not show_menu:
 			self.folder_done(0, openers, folder)
@@ -215,7 +228,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		opener = openers[idx]
 		if sublime.platform() == 'windows':
 			folder = os.path.normcase(folder)
-		self.run_subprocess(opener.get('commands', []) + [folder], opener.get('kwargs', {}))
+		self.prepare_args_and_run(opener, folder)
 
 	def file_action(self, path, show_menu):
 		"""Edit file or choose from file actions.
@@ -241,4 +254,4 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		opener = openers[idx-1]
 		if sublime.platform() == 'windows':
 			path = os.path.normcase(path)
-		self.run_subprocess(opener.get('commands', []) + [path], opener.get('kwargs', {}))
+		self.prepare_args_and_run(opener, path)
