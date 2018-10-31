@@ -58,8 +58,8 @@ Don't want to choose from menu items to open a file or a folder? Look for __Open
 This will open files in Sublime Text for editing, or reveal folders in the Finder, without showing the menu first.
 
 
-### Running commands on files, folders or special URLs
-__Open URL__ provides a few settings you can configure to run custom commands on files, folders, or special URLs that are neither files, folders, nor web URLs, such as FTP URLs:
+### Running shell commands on files, folders or special URLs
+__Open URL__ provides a few settings you can configure to run custom shell commands on files, folders, or special URLs that are neither files, folders, nor web URLs, such as FTP URLs:
 
 - __file_custom_commands__
 - __folder_custom_commands__
@@ -68,7 +68,7 @@ __Open URL__ provides a few settings you can configure to run custom commands on
 The custom command settings should point to an array of object literals that can have up to 5 properties:
 
 - `label`, __required__: the label for the command in the dropdown menu
-- `commands` __required__: an array or string of shell arguments to which the URL is appended; if this string contains the `$url` placeholder, this placeholder is replaced with the URL
+- `commands` __required__: a string, or an array of shell arguments, to which the URL is appended; if this string contains the `$url` placeholder, this placeholder is replaced with the URL
 - `pattern`, __optional__: the command only appears if the URL matches this pattern `(optional)`
 - `os` __optional__: the command only appears for this OS; one of `('osx', 'windows', 'linux')`
 - `kwargs`, __optional__: kwargs that are passed to [subprocess.Popen](https://docs.python.org/3.5/library/subprocess.html#popen-constructor)
@@ -91,6 +91,11 @@ For another example, if you wanted to create OSX commands for adding a folder to
   { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"] },
 ],
 ~~~
+
+#### Set cwd directory for shell command
+You might want to choose the directory from which your shell command is executed. Python's `subprocess` library makes this easy with the `cwd` kwarg.
+
+Open URL defines two special values for the `cwd` kwarg, `"project_root"` and `"current_file"`. Using these values dynamically sets the working directory for the shell command to the project root, or the directory of the currently open file.
 
 Check the __Settings__ section, or run __Open URL: Settings__ for examples.
 
@@ -122,7 +127,7 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   + example, for opening the folder in iTerm: `{ "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] }`
 - __other_custom_commands__
   + pass a URL which is neither a file, a folder, nor a web URL to shell commands whose pattern matches the URL
-  + example, for opening FTP URLs: `{ "label": "open with filezilla", "pattern": "^ftp://", "commands": [ "open", "-a", "/Applications/FileZilla.app" ] },`
+  + example, for opening a file at a specific line number: `{ "label": "subl: open file at line #", "pattern": ":[0-9]+$", "commands": [ "subl" ], "kwargs": {"cwd": "project_root"} }`
 
 
 ## Finally

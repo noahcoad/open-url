@@ -106,6 +106,21 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			end += 1
 		return self.view.substr(sublime.Region(start, end)).strip()
 
+	def file_path(self):
+		path = self.view.file_name()
+		if path:  # this file has been saved to disk
+			return os.path.dirname(path)
+		return None
+
+	def project_path(self):
+		project = self.view.window().project_data()
+		if project is None:
+			return None
+		try:
+			return os.path.expanduser(project['folders'][0]['path'])
+		except:
+			return None
+
 	def abs_path(self, path):
 		"""Normalizes path, and attempts to convert path into absolute path.
 		"""
@@ -113,23 +128,30 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		if os.path.isabs(path):
 			return path
 
-		file_path = self.view.file_name()
-		if file_path:  # this file has been saved to disk
-			abs_path = os.path.join(os.path.dirname(file_path), path)
+		file_path = self.file_path()
+		if file_path:
+			abs_path = os.path.join(file_path, path)
 			if os.path.exists(abs_path):  # if file relative to current view exists, open it, else continue
 				return abs_path
 
-		project = self.view.window().project_data()
-		if project is None:  # nothing more to try
+		project_path = self.project_path()
+		if project_path is None:  # nothing more to try
 			return path
-		try:  # look for file relative to project root
-			return os.path.join(os.path.expanduser(project['folders'][0]['path']), path)
-		except (KeyError, IndexError):
-			return path
+		return os.path.join(project_path, path)
 
 	def prepare_args_and_run(self, opener, path):
 		commands = opener.get('commands', [])
 		kwargs = opener.get('kwargs', {})
+
+		cwd = kwargs.get('cwd')
+		if cwd == 'project_root':
+			project_path = self.project_path()
+			if project_path:
+				kwargs['cwd'] = project_path
+		if cwd == 'current_file':
+			file_path = self.file_path()
+			if file_path:
+				kwargs['cwd'] = file_path
 
 		if isinstance(commands, str):
 			kwargs['shell'] = True

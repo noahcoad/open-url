@@ -49,12 +49,13 @@
 
     { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
 
-    // { "label": "add to project", "os": "osx", "commands": ["open", "-a", "Sublime Text"] },
-    // { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"] },
+    { "label": "add to project", "os": "osx", "commands": ["open", "-a", "Sublime Text"] },
+    { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"] },
   ],
 
   // pass other URL that matches regex "pattern" to shell commands
   "other_custom_commands": [
     // { "label": "open with filezilla", "os": "osx", "pattern": "^ftp://", "commands": [ "open", "-a", "/Applications/FileZilla.app" ] },
+    { "label": "subl: open file at line #", "pattern": ":[0-9]+$", "commands": [ "subl" ], "kwargs": {"cwd": "project_root"} },
   ],
 }
