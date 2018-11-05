@@ -59,17 +59,17 @@ This will open files in Sublime Text for editing, or reveal folders in the Finde
 
 
 ### Running shell commands on files, folders or special URLs
-__Open URL__ provides a few settings you can configure to run custom shell commands on files, folders, or special URLs that are neither files, folders, nor web URLs, such as FTP URLs:
+__Open URL__ provides a few settings you can configure to run custom shell commands on files, folders, or special URLs, such as FTP URLs:
 
 - __file_custom_commands__
 - __folder_custom_commands__
-- __other_custom_commands__ (for special URLs)
+- __other_custom_commands__ (for special URLs, i.e. neither files, folders, nor web URLs)
 
-The custom command settings should point to an array of object literals that can have up to 5 properties:
+The custom command settings should point to an array of objects that can have up to 5 properties:
 
 - `label`, __required__: the label for the command in the dropdown menu
 - `commands` __required__: a string, or an array of shell arguments, to which the URL is appended; if this string contains the `$url` placeholder, this placeholder is replaced with the URL
-- `pattern`, __optional__: the command only appears if the URL matches this pattern `(optional)`
+- `pattern`, __optional__: the command only appears if the URL matches this pattern
 - `os` __optional__: the command only appears for this OS; one of `('osx', 'windows', 'linux')`
 - `kwargs`, __optional__: kwargs that are passed to [subprocess.Popen](https://docs.python.org/3.5/library/subprocess.html#popen-constructor)
 
