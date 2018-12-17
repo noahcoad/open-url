@@ -92,12 +92,22 @@ For another example, if you wanted to create OSX commands for adding a folder to
 ],
 ~~~
 
+
 #### Set cwd directory for shell command
 You might want to choose the directory from which your shell command is executed. Python's `subprocess` library makes this easy with the `cwd` kwarg.
 
 Open URL defines two special values for the `cwd` kwarg, `"project_root"` and `"current_file"`. Using these values dynamically sets the working directory for the shell command to the project root, or the directory of the currently open file.
 
 Check the __Settings__ section, or run __Open URL: Settings__ for examples.
+
+
+### Multiple Cursors
+Copy these URLs into Sublime Text and select both lines using multiple cursors, then run URL opener.
+
+- <https://www.google.com?q=hello>
+- <https://www.google.com?q=there>
+
+The plugin opens both URLs simultaneously. You can use multiple cursors to open multiple files, folders, URLs, or a mix of all of them. Note that running Open URL with multiple cursors will skip the menu, as if you had run __Open URL (Skip Menu)__, for all selections.
 
 
 ## Settings

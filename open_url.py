@@ -54,7 +54,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# Sublime Text has its own open_url command used for things like Help > Documentation
 		# so if a url is passed, open it instead of getting text from the view
 		if url is None:
-			url = self.get_selection()
+			urls = [self.get_selection(region) for region in self.view.sel()]
+		else:
+			urls = [url]
+		if len(urls) > 1:
+			show_menu = False
+		for url in urls:
+			self.handle(url, show_menu)
+
+	def handle(self, url, show_menu):
 		path = self.abs_path(url)
 
 		if os.path.isfile(path):
@@ -77,14 +85,12 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		self.modify_or_search_action(url)
 
-	def get_selection(self):
+	def get_selection(self, region):
 		"""Returns selection. If selection contains no characters, expands it
 		until hitting delimiter chars.
 		"""
-		s = self.view.sel()[0]
-
-		start = s.begin()
-		end = s.end()
+		start = region.begin()
+		end = region.end()
 
 		if start != end:
 			return self.view.substr(sublime.Region(start, end)).strip()
