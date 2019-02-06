@@ -69,6 +69,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.file_action(path, show_menu)
 			return
 
+		if self.view.file_name() and not url:
+			self.file_action(self.view.file_name(), show_menu)
+			return
+
 		if os.path.isdir(path):
 			self.folder_action(path, show_menu)
 			return
