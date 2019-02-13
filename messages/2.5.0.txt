@@ -1,0 +1,4 @@
+# New Features
+Running Open URL on an empty URL in a saved file passes the file's path to your file commands.
+
+If you're in Sublime Text project, running Open URL on an empty URL in an __unsaved view__ passes the project's root directory to your folder commands.

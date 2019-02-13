@@ -36,7 +36,7 @@
     { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
     { "label": "open with default application", "os": "linux", "commands": [] },
 
-    // { "label": "copy path", "commands": "echo $url | pbcopy" },
+    // { "label": "copy path", "commands": "printf '$url' | pbcopy" },
 
     // { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl", "-n"] },
   ],

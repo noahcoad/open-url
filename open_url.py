@@ -170,7 +170,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			else:
 				self.run_subprocess('{} {}'.format(commands, path), kwargs)
 		else:
-			self.run_subprocess(commands + [path], kwargs)
+			has_url = any('$url' in command for command in commands)
+			if has_url:
+				self.run_subprocess([command.replace('$url', path) for command in commands], kwargs)
+			else:
+				self.run_subprocess(commands + [path], kwargs)
 
 	def run_subprocess(self, args, kwargs):
 		"""Runs on another thread to avoid blocking main thread.
