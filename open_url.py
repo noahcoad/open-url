@@ -1,6 +1,6 @@
 # Quickly open files, folders, web URLs or other URLs from anywhere in Sublime Text
-import sublime
-import sublime_plugin
+import sublime  # type: ignore
+import sublime_plugin  # type: ignore
 
 import webbrowser
 import threading
@@ -13,14 +13,14 @@ from urllib.parse import quote
 from .url import is_url
 
 
-def prepend_scheme(s):
+def prepend_scheme(s: str) -> str:
     o = urlparse(s)
     if not o.scheme:
         s = 'http://' + s
     return s
 
 
-def remove_trailing_delimiters(url, trailing_delimiters):
+def remove_trailing_delimiters(url: str, trailing_delimiters: str) -> str:
     """Removes any and all chars in trailing_delimiters from end of url.
     """
     if not trailing_delimiters:
@@ -48,7 +48,7 @@ def match_openers(openers, url):
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
-    def run(self, edit=None, url=None, show_menu=True):
+    def run(self, edit=None, url: str = None, show_menu: bool = True):
         self.config = sublime.load_settings('open_url.sublime-settings')
 
         # Sublime Text has its own open_url command used for things like Help > Documentation
@@ -62,7 +62,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         for url in urls:
             self.handle(url, show_menu)
 
-    def handle(self, url, show_menu):
+    def handle(self, url, show_menu) -> None:
         path = self.abs_path(url)
 
         if os.path.isfile(path):
@@ -183,7 +183,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             subprocess.check_call(args, **kwargs)
         threading.Thread(target=sp, args=(args, kwargs)).start()
 
-    def open_tab(self, url):
+    def open_tab(self, url: str) -> None:
         browser = self.config.get('web_browser', '')
         browser_path = self.config.get('web_browser_path', '')
 

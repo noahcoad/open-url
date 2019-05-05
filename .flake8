@@ -3,9 +3,5 @@ ignore =
   C812,
   C813,
   C814,
-  E226,
-  W191
-exclude =
-  sandbox,
-  migrations
+  E226
 max-line-length = 120
