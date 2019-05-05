@@ -140,6 +140,10 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   + example, for opening a file at a specific line number: `{ "label": "subl: open file at line #", "pattern": ":[0-9]+$", "commands": [ "subl" ], "kwargs": {"cwd": "project_root"} }`
 
 
+## Release Notes
+[See Open URL's version history here](https://github.com/noahcoad/open-url/blob/master/messages/release_notes.txt).
+
+
 ## Finally
 See also: [Google Spell Check](https://github.com/noahcoad/google-spell-check).
 
