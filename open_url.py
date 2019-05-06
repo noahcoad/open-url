@@ -1,5 +1,5 @@
 try:
-    from typing import List
+    from typing import List, Dict, Any, cast
 except Exception:
     pass
 
@@ -15,6 +15,9 @@ from urllib.parse import urlparse
 from urllib.parse import quote
 
 from .url import is_url
+
+
+cast = lambda t, v: v  # noqa
 
 
 def prepend_scheme(s: str) -> str:
@@ -52,8 +55,11 @@ def match_openers(openers, url):
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
+    config = None  # type: Dict[str, Any]
+
     def run(self, edit=None, url: str = None, show_menu: bool = True) -> None:
-        self.config = sublime.load_settings('open_url.sublime-settings')
+        settings = sublime.load_settings('open_url.sublime-settings')  # type: Dict[str, Any]
+        self.config = settings
 
         # Sublime Text has its own open_url command used for things like Help > Documentation
         # so if a url is passed, open it instead of getting text from the view
@@ -81,7 +87,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self.folder_action(path, show_menu)
             return
 
-        clean = remove_trailing_delimiters(url, self.config.get('trailing_delimiters'))
+        clean = remove_trailing_delimiters(url, cast(str, self.config.get('trailing_delimiters')))
         if is_url(clean) or clean.startswith('http://') or clean.startswith('https://'):
             self.open_tab(prepend_scheme(clean))
             return
@@ -106,7 +112,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         # nothing is selected, so expand selection to nearest delimeters
         view_size = self.view.size()  # type: int
-        delimeters = list(self.config.get('delimiters'))  # type: List[str]
+        delimeters = list(cast(str, self.config.get('delimiters')))  # type: List[str]
 
         # move the selection back to the start of the url
         while start > 0:

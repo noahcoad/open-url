@@ -29,6 +29,14 @@
     }
   ],
 
+  "file_prefixes": [],
+
+  "file_suffixes": [".js"],
+
+  "search_paths": ["src"],
+
+  "aliases": {},
+
   // pass file that matches regex "pattern" to shell commands
   "file_custom_commands": [
     { "label": "reveal", "os": "osx", "commands": ["open", "-R"] },
