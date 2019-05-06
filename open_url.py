@@ -1,5 +1,5 @@
 try:
-    from typing import List, Dict, cast
+    from typing import List, Dict, Any, cast
     from mypy_extensions import TypedDict
 except Exception:
     List = None  # type: ignore
@@ -36,6 +36,22 @@ Settings = TypedDict('Settings', {
     'folder_custom_commands': List,
     'other_custom_commands': List,
 })
+
+# these are necessary to convert settings object to a dict, which can then be merged with project settings
+settings_keys = [
+    'delimiters',
+    'trailing_delimiters',
+    'web_browser',
+    'web_browser_path',
+    'web_searchers',
+    'file_prefixes',
+    'file_suffixes',
+    'search_paths',
+    'aliases',
+    'file_custom_commands',
+    'folder_custom_commands',
+    'other_custom_commands',
+]
 
 
 def prepend_scheme(s: str) -> str:
@@ -90,12 +106,27 @@ def generate_urls(url, search_paths, file_prefixes, file_suffixes):
     return list(OrderedDict.fromkeys(urls).keys())
 
 
+def merge_settings(window, keys):
+    # type: (Any, List[str]) -> Settings
+    settings_object = sublime.load_settings('open_url.sublime-settings')
+    settings = cast(Settings, {k: settings_object.get(k) for k in keys})
+
+    project = window.project_data()
+    if project is None:
+        return settings
+    try:
+        for k, v in project['settings']['open_url'].items():
+            settings[k] = v  # type: ignore
+        return settings
+    except Exception:
+        return settings
+
+
 class OpenUrlCommand(sublime_plugin.TextCommand):
     config = None  # type: Settings
 
     def run(self, edit=None, url: str = None, show_menu: bool = True) -> None:
-        settings = sublime.load_settings('open_url.sublime-settings')  # type: Settings
-        self.config = settings
+        self.config = merge_settings(self.view.window(), settings_keys)
 
         # Sublime Text has its own open_url command used for things like Help > Documentation
         # so if a url is passed, open it instead of getting text from the view
@@ -109,12 +140,12 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self.handle(url, show_menu)
 
     def handle(self, url: str, show_menu: bool) -> None:
-        url = resolve_aliases(url, self.config.get('aliases', {}))
+        url = resolve_aliases(url, self.config['aliases'])
         urls = generate_urls(
             url,
-            self.config.get('search_paths', []),
-            self.config.get('file_prefixes', []),
-            self.config.get('file_suffixes', [])
+            self.config['search_paths'],
+            self.config['file_prefixes'],
+            self.config['file_suffixes']
         )
 
         for u in urls:
@@ -132,12 +163,12 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                 self.folder_action(path, show_menu)
                 return
 
-        clean = remove_trailing_delimiters(url, self.config.get('trailing_delimiters', ''))
+        clean = remove_trailing_delimiters(url, self.config['trailing_delimiters'])
         if is_url(clean) or clean.startswith('http://') or clean.startswith('https://'):
             self.open_tab(prepend_scheme(clean))
             return
 
-        openers = match_openers(self.config.get('other_custom_commands', []), url)
+        openers = match_openers(self.config['other_custom_commands'], url)
         if openers:
             self.other_action(url, openers, show_menu)
             return
@@ -157,7 +188,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         # nothing is selected, so expand selection to nearest delimeters
         view_size = self.view.size()  # type: int
-        delimeters = list(self.config.get('delimiters', ''))
+        delimeters = list(self.config['delimiters'])
 
         # move the selection back to the start of the url
         while start > 0:
@@ -241,8 +272,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         threading.Thread(target=sp, args=(args, kwargs)).start()
 
     def open_tab(self, url: str) -> None:
-        browser = self.config.get('web_browser', '')
-        browser_path = self.config.get('web_browser_path', '')
+        browser = self.config['web_browser']
+        browser_path = self.config['web_browser_path']
 
         def ot(url, browser, browser_path):
             if browser_path:
@@ -263,7 +294,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         """Not a URL and not a local path; prompts user to modify path and looks
         for it again, or searches for this term using a web searcher.
         """
-        searchers = self.config.get('web_searchers', [])
+        searchers = self.config['web_searchers']
         opts = ['modify path ({})'.format(term)]
         opts += ['{} ({})'.format(s['label'], term) for s in searchers]
         sublime.active_window().show_quick_panel(opts, lambda idx: self.modify_or_search_done(idx, searchers, term))
@@ -306,7 +337,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
     def folder_action(self, folder, show_menu):
         """Choose from folder actions.
         """
-        openers = match_openers(self.config.get('folder_custom_commands', []), folder)
+        openers = match_openers(self.config['folder_custom_commands'], folder)
 
         if openers and not show_menu:
             self.folder_done(0, openers, folder)
@@ -326,7 +357,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
     def file_action(self, path: str, show_menu: bool) -> None:
         """Edit file or choose from file actions.
         """
-        openers = match_openers(self.config.get('file_custom_commands', []), path)
+        openers = match_openers(self.config['file_custom_commands'], path)
 
         if not show_menu:
             self.view.window().open_file(path)
