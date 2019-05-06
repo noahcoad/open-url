@@ -22,19 +22,36 @@
 
   // if URL is neither a local file nor a web URL, pass it to a web searcher
   "web_searchers": [
-    { "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" },
+    {
+      "label": "google search",
+      "url": "http://google.com/search?q=",
+      "encoding": "utf-8"
+    }
   ],
 
   // pass file that matches regex "pattern" to shell commands
   "file_custom_commands": [
     { "label": "reveal", "os": "osx", "commands": ["open", "-R"] },
-    { "label": "open with default application", "os": "osx", "commands": ["open"] },
+    {
+      "label": "open with default application",
+      "os": "osx",
+      "commands": ["open"]
+    },
 
-    { "label": "reveal", "os": "windows", "commands": ["explorer", "/select,"] },
-    { "label": "open with default application", "os": "windows", "commands": ["start"], "kwargs": {"shell": true} },
+    {
+      "label": "reveal",
+      "os": "windows",
+      "commands": ["explorer", "/select,"]
+    },
+    {
+      "label": "open with default application",
+      "os": "windows",
+      "commands": ["start"],
+      "kwargs": { "shell": true }
+    },
 
     { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
-    { "label": "open with default application", "os": "linux", "commands": [] },
+    { "label": "open with default application", "os": "linux", "commands": [] }
 
     // { "label": "copy path", "commands": "printf '$url' | pbcopy" },
 
@@ -49,13 +66,28 @@
 
     { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
 
-    { "label": "add to project", "os": "osx", "commands": ["open", "-a", "Sublime Text"] },
-    { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"] },
+    {
+      "label": "add to project",
+      "os": "osx",
+      "commands": ["open", "-a", "Sublime Text"]
+    },
+    {
+      "label": "open in new window",
+      "os": "osx",
+      "commands": [
+        "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"
+      ]
+    }
   ],
 
   // pass other URL that matches regex "pattern" to shell commands
   "other_custom_commands": [
     // { "label": "open with filezilla", "os": "osx", "pattern": "^ftp://", "commands": [ "open", "-a", "/Applications/FileZilla.app" ] },
-    { "label": "subl: open file at line #", "pattern": ":[0-9]+$", "commands": [ "subl" ], "kwargs": {"cwd": "project_root"} },
-  ],
+    {
+      "label": "subl: open file at line #",
+      "pattern": ":[0-9]+$",
+      "commands": ["subl"],
+      "kwargs": { "cwd": "project_root" }
+    }
+  ]
 }

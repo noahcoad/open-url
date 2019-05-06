@@ -1,5 +1,5 @@
 [
-	{
+  {
     "caption": "Open URL: Settings",
     "command": "edit_settings",
     "args": {
@@ -8,9 +8,9 @@
     }
   },
 
-	{ "caption": "Open URL", "command": "open_url" },
+  { "caption": "Open URL", "command": "open_url" },
 
-	{
+  {
     "caption": "Open URL (Skip Menu)",
     "command": "open_url",
     "args": { "show_menu": false }

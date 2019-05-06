@@ -1,4 +1,2 @@
 // Linux and Windows
-[
-	{ "keys": ["ctrl+alt+u"], "command": "open_url" }
-]
+[{ "keys": ["ctrl+alt+u"], "command": "open_url" }]

@@ -1,4 +1,8 @@
-# Quickly open files, folders, web URLs or other URLs from anywhere in Sublime Text
+try:
+    from typing import List
+except Exception:
+    pass
+
 import sublime  # type: ignore
 import sublime_plugin  # type: ignore
 
@@ -48,7 +52,7 @@ def match_openers(openers, url):
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
-    def run(self, edit=None, url: str = None, show_menu: bool = True):
+    def run(self, edit=None, url: str = None, show_menu: bool = True) -> None:
         self.config = sublime.load_settings('open_url.sublime-settings')
 
         # Sublime Text has its own open_url command used for things like Help > Documentation
@@ -62,7 +66,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         for url in urls:
             self.handle(url, show_menu)
 
-    def handle(self, url, show_menu) -> None:
+    def handle(self, url: str, show_menu: bool) -> None:
         path = self.abs_path(url)
 
         if os.path.isfile(path):
@@ -89,19 +93,20 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         self.modify_or_search_action(url)
 
-    def get_selection(self, region):
+    def get_selection(self, region) -> str:
         """Returns selection. If selection contains no characters, expands it
         until hitting delimiter chars.
         """
-        start = region.begin()
-        end = region.end()
+        start = region.begin()  # type: int
+        end = region.end()  # type: int
 
         if start != end:
-            return self.view.substr(sublime.Region(start, end)).strip()
+            sel = self.view.substr(sublime.Region(start, end))  # type: str
+            return sel.strip()
 
         # nothing is selected, so expand selection to nearest delimeters
-        view_size = self.view.size()
-        delimeters = list(self.config.get('delimiters'))
+        view_size = self.view.size()  # type: int
+        delimeters = list(self.config.get('delimiters'))  # type: List[str]
 
         # move the selection back to the start of the url
         while start > 0:
@@ -114,7 +119,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             if self.view.substr(end) in delimeters:
                 break
             end += 1
-        return self.view.substr(sublime.Region(start, end)).strip()
+        sel = self.view.substr(sublime.Region(start, end))
+        return sel.strip()
 
     def file_path(self):
         path = self.view.file_name()
