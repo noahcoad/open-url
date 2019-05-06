@@ -1,7 +1,11 @@
 try:
     from typing import List, Dict, Any, cast
+    from mypy_extensions import TypedDict
 except Exception:
-    pass
+    List = []  # type: ignore
+    Dict = None  # type: ignore
+    cast = lambda type, val: val  # noqa
+    TypedDict = lambda name, val: ''  # type: ignore # noqa
 
 import sublime  # type: ignore
 import sublime_plugin  # type: ignore
@@ -17,7 +21,20 @@ from urllib.parse import quote
 from .url import is_url
 
 
-cast = lambda t, v: v  # noqa
+Settings = TypedDict('Settings', {
+    'delimiters': str,
+    'trailing_delimiters': str,
+    'web_browser': str,
+    'web_browser_path': List,
+    'web_searchers': List,
+    'file_prefixes': List,
+    'file_suffixes': List,
+    'search_paths': List,
+    'aliases': Dict,
+    'file_custom_commands': List,
+    'folder_custom_commands': List,
+    'other_custom_commands': List,
+})
 
 
 def prepend_scheme(s: str) -> str:
@@ -55,10 +72,10 @@ def match_openers(openers, url):
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
-    config = None  # type: Dict[str, Any]
+    config = None  # type: Settings
 
     def run(self, edit=None, url: str = None, show_menu: bool = True) -> None:
-        settings = sublime.load_settings('open_url.sublime-settings')  # type: Dict[str, Any]
+        settings = sublime.load_settings('open_url.sublime-settings')  # type: Settings
         self.config = settings
 
         # Sublime Text has its own open_url command used for things like Help > Documentation
