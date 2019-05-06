@@ -29,11 +29,11 @@
     }
   ],
 
+  "search_paths": ["src"],
+
   "file_prefixes": [],
 
   "file_suffixes": [".js"],
-
-  "search_paths": ["src"],
 
   "aliases": {},
 

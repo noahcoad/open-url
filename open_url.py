@@ -1,10 +1,10 @@
 try:
-    from typing import List, Dict, Any, cast
+    from typing import List, Dict, cast
     from mypy_extensions import TypedDict
 except Exception:
-    List = []  # type: ignore
+    List = None  # type: ignore
     Dict = None  # type: ignore
-    cast = lambda type, val: val  # noqa
+    cast = lambda t, val: val  # noqa
     TypedDict = lambda name, val: ''  # type: ignore # noqa
 
 import sublime  # type: ignore
@@ -15,6 +15,7 @@ import threading
 import os
 import re
 import subprocess
+from collections import OrderedDict
 from urllib.parse import urlparse
 from urllib.parse import quote
 
@@ -58,6 +59,7 @@ def remove_trailing_delimiters(url: str, trailing_delimiters: str) -> str:
 
 
 def match_openers(openers, url):
+    # type: (List, str) -> List
     ret = []
     platform = sublime.platform()
     for opener in openers:
@@ -69,6 +71,23 @@ def match_openers(openers, url):
             continue
         ret.append(opener)
     return ret
+
+
+def resolve_aliases(url: str, aliases: Dict) -> str:
+    for key, val in aliases.items():
+        url = url.replace(key, val)
+    return url
+
+
+def generate_urls(url, search_paths, file_prefixes, file_suffixes):
+    # type: (str, List[str], List[str], List[str]) -> List[str]
+    urls = []
+    for path in [''] + search_paths:
+        d, base = os.path.split(os.path.join(path, url))
+        for prefix in [''] + file_prefixes:
+            for suffix in [''] + file_suffixes:
+                urls.append(os.path.join(d, prefix + base + suffix))
+    return list(OrderedDict.fromkeys(urls).keys())
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
@@ -90,26 +109,35 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self.handle(url, show_menu)
 
     def handle(self, url: str, show_menu: bool) -> None:
-        path = self.abs_path(url)
+        url = resolve_aliases(url, self.config.get('aliases', {}))
+        urls = generate_urls(
+            url,
+            self.config.get('search_paths', []),
+            self.config.get('file_prefixes', []),
+            self.config.get('file_suffixes', [])
+        )
 
-        if os.path.isfile(path):
-            self.file_action(path, show_menu)
-            return
+        for u in urls:
+            path = self.abs_path(u)
 
-        if self.view.file_name() and not url:
-            self.file_action(self.view.file_name(), show_menu)
-            return
+            if os.path.isfile(path):
+                self.file_action(path, show_menu)
+                return
 
-        if os.path.isdir(path):
-            self.folder_action(path, show_menu)
-            return
+            if self.view.file_name() and not u:
+                self.file_action(self.view.file_name(), show_menu)
+                return
 
-        clean = remove_trailing_delimiters(url, cast(str, self.config.get('trailing_delimiters')))
+            if os.path.isdir(path):
+                self.folder_action(path, show_menu)
+                return
+
+        clean = remove_trailing_delimiters(url, self.config.get('trailing_delimiters', ''))
         if is_url(clean) or clean.startswith('http://') or clean.startswith('https://'):
             self.open_tab(prepend_scheme(clean))
             return
 
-        openers = match_openers(self.config.get('other_custom_commands'), url)
+        openers = match_openers(self.config.get('other_custom_commands', []), url)
         if openers:
             self.other_action(url, openers, show_menu)
             return
@@ -129,7 +157,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         # nothing is selected, so expand selection to nearest delimeters
         view_size = self.view.size()  # type: int
-        delimeters = list(cast(str, self.config.get('delimiters')))  # type: List[str]
+        delimeters = list(self.config.get('delimiters', ''))
 
         # move the selection back to the start of the url
         while start > 0:
@@ -160,7 +188,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         except Exception:
             return None
 
-    def abs_path(self, path):
+    def abs_path(self, path: str) -> str:
         """Normalizes path, and attempts to convert path into absolute path.
         """
         path = os.path.normcase(os.path.expandvars(os.path.expanduser(path)))
@@ -295,10 +323,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             folder = os.path.normcase(folder)
         self.prepare_args_and_run(opener, folder)
 
-    def file_action(self, path, show_menu):
+    def file_action(self, path: str, show_menu: bool) -> None:
         """Edit file or choose from file actions.
         """
-        openers = match_openers(self.config.get('file_custom_commands'), path)
+        openers = match_openers(self.config.get('file_custom_commands', []), path)
 
         if not show_menu:
             self.view.window().open_file(path)

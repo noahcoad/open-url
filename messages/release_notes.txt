@@ -1,3 +1,24 @@
+# 2.6.0
+## Path transform settings
+Open URL just got a whole lot more powerful!
+
+This release adds the following path transformation settings: `search_paths`, `file_prefixes`, `file_suffixes`, `aliases`, based on these issues:
+
+- https://github.com/noahcoad/open-url/issues/49
+- https://github.com/noahcoad/open-url/issues/50
+
+These settings let you apply a combination of transformations to the file/folder path and try to open each of them. This lets you do things like this:
+
+```
+"search_paths": ["src"],
+"file_suffixes": [".js"],
+```
+
+Open URL can now open a file at `src/utils/module.js` with this path: `utils/module`. Very nice for absolute imports and languages with modules!
+
+Check out <https://github.com/noahcoad/open-url/blob/master/open_url.sublime-settings> for examples on how to use the new settings.
+
+
 # 2.5.0
 ## New Features
 Running Open URL on an empty URL in a saved file passes the file's path to your file commands.
@@ -11,8 +32,8 @@ Open URL now works for multiple cursors!
 
 This works for files, folders and URLs. Try selecting both of these URLs using multiple cursors, and running Open URL.
 
-https://www.google.com?q=hello
-https://www.google.com?q=there
+- https://www.google.com?q=hello
+- https://www.google.com?q=there
 
 
 # 2.3.0
