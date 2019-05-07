@@ -133,7 +133,7 @@ The plugin opens both URLs simultaneously. You can use multiple cursors to open 
 To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and look for __Open URL: Settings__.
 
 - __delimiters__
-  + characters at which auto-expansion of selected path stops, e.g. ` \t\n\r\"',*<>[]()`
+  + characters at which auto-expansion of selected path stops, e.g. `` \t\n\r\"'`,*<>[](){}``
   + the default settings are Markdown friendly
 - __trailing_delimiters__
   + if any of these characters are seen at the end of a web URL, they are recursively removed; default is `;.:`
