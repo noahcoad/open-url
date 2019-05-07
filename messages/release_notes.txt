@@ -2,7 +2,7 @@
 ## Path transform settings
 Open URL just got a whole lot more powerful!
 
-This release adds the following path transformation settings: `search_paths`, `file_prefixes`, `file_suffixes`, `aliases`, based on these issues:
+This release adds the following path transform settings: `aliases`, `search_paths`, `file_prefixes`, `file_suffixes`, based on these issues:
 
 - https://github.com/noahcoad/open-url/issues/49
 - https://github.com/noahcoad/open-url/issues/50

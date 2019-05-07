@@ -101,6 +101,25 @@ Open URL defines two special values for the `cwd` kwarg, `"project_root"` and `"
 Check the __Settings__ section, or run __Open URL: Settings__ for examples.
 
 
+### URL / Path Transforms
+Open URL has settings that let you transform your selected URL / path before attempting to open it.
+
+Here are the settings with their default values:
+
+- `aliases`: `{}`
+- `search_paths`: `["src"]`
+- `file_prefixes`: `[]`
+- `file_suffixes`: `[".js"]`
+
+The `aliases` dict is the first transform applied to the selected URL / path. It replaces each __key__ in URL with the corresponding __value__.
+
+The other transforms affect only file and folder paths. `search_paths` is a list of directories that are prepended to the path, `file_prefixes` are prepended to the filename, and `file_suffixes` are appended to the filename.
+
+One path is generated for each combination of search path, file prefix and file suffix, and the first path that contains a directory or a file is opened.
+
+Imagine you're building a JS app that you've set up to use absolute imports, relative to the `src` directory. Your app has a file at `src/utils/module.js`. Open URL can resolve this file using just `utils/module`. Very nice!
+
+
 ### Multiple Cursors
 Copy these URLs into Sublime Text and select both lines using multiple cursors, then run URL opener.
 
@@ -113,7 +132,7 @@ The plugin opens both URLs simultaneously. You can use multiple cursors to open 
 ## Settings
 To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and look for __Open URL: Settings__.
 
-- __delimeters__
+- __delimiters__
   + characters at which auto-expansion of selected path stops, e.g. ` \t\n\r\"',*<>[]()`
   + the default settings are Markdown friendly
 - __trailing_delimiters__
@@ -129,6 +148,18 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
 - __web_searchers__
   + if your selection isn't a file, a folder, or a URL, you can choose to pass it to a web searcher, which is just a URL that searches for the selected text
   + example: `{ "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" }`
+- __aliases__
+  + first transform applied to URL, a dict with keys and values; replace each __key__ in URL with corresponding __value__
+  + example: `{ "{{BASE_PATH}}": "src/base" }`
+- __search_paths__
+  + path transform; joins these directories to beginning of path
+  + example: `["src"]`
+- __file_prefixes__
+  + path transform; adds these prefixes to filename only
+  + example: `["_"]`
+- __file_suffixes__
+  + path transform; adds these suffixes to filename only
+  + example: `[".js", ".ts", ".tsx"]`
 - __file_custom_commands__
   + pass a file to shell commands whose pattern matches the file path
   + example, for copying the file path to the clipboard: `{ "label": "copy path", "commands": "printf '$url' | pbcopy" }`
@@ -138,6 +169,27 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
 - __other_custom_commands__
   + pass a URL which is neither a file, a folder, nor a web URL to shell commands whose pattern matches the URL
   + example, for opening a file at a specific line number: `{ "label": "subl: open file at line #", "pattern": ":[0-9]+$", "commands": [ "subl" ], "kwargs": {"cwd": "project_root"} }`
+
+
+### Project-Specific Settings
+Some settings, especially the URL / path transforms like `aliases`, will probably vary between projects. Fortunately Open URL lets you specify project-specific settings in any `.sublime-project` file. Just put them in `["settings"]["open_url"]`.
+
+~~~json
+{
+  "folders": [
+    {
+      "path": "~/Library/Application Support/Sublime Text 3/Packages/OpenUrl"
+    }
+  ],
+  "settings": {
+    "open_url": {
+      "file_suffixes": [".py"]
+    }
+  }
+}
+~~~
+
+Project-specific settings override default and user settings.
 
 
 ## Release Notes

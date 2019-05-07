@@ -186,19 +186,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             sel = self.view.substr(sublime.Region(start, end))  # type: str
             return sel.strip()
 
-        # nothing is selected, so expand selection to nearest delimeters
+        # nothing is selected, so expand selection to nearest delimiters
         view_size = self.view.size()  # type: int
-        delimeters = list(self.config['delimiters'])
+        delimiters = list(self.config['delimiters'])
 
         # move the selection back to the start of the url
         while start > 0:
-            if self.view.substr(start - 1) in delimeters:
+            if self.view.substr(start - 1) in delimiters:
                 break
             start -= 1
 
         # move end of selection forward to the end of the url
         while end < view_size:
-            if self.view.substr(end) in delimeters:
+            if self.view.substr(end) in delimiters:
                 break
             end += 1
         sel = self.view.substr(sublime.Region(start, end))
