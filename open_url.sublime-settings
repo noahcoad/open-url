@@ -65,6 +65,8 @@
     // { "label": "copy path", "commands": "printf '$url' | pbcopy" },
 
     // { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl", "-n"] },
+
+    // { "label": "open with vs code", "os": "osx", "commands": "open -a /Applications/Visual\\ Studio\\ Code.app '$url'" }
   ],
 
   // pass folder that matches regex "pattern" to shell commands
