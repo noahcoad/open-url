@@ -1,3 +1,8 @@
+# 2.7.0
+## Remove trailing delimiters
+Just got more useful. Trailing delimiters removed from file and folder paths as well, and the resulting paths __with and without__ removed delimeters are tried.
+
+
 # 2.6.0
 ## Path transform settings
 Open URL just got a whole lot more powerful!
