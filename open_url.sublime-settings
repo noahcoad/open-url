@@ -85,9 +85,7 @@
     {
       "label": "open in new window",
       "os": "osx",
-      "commands": [
-        "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"
-      ]
+      "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"]
     }
   ],
 

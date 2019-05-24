@@ -15,7 +15,6 @@ import threading
 import os
 import re
 import subprocess
-from collections import OrderedDict
 from urllib.parse import urlparse
 from urllib.parse import quote
 
@@ -95,15 +94,22 @@ def resolve_aliases(url: str, aliases: Dict) -> str:
     return url
 
 
-def generate_urls(url, search_paths, file_prefixes, file_suffixes):
-    # type: (str, List[str], List[str], List[str]) -> List[str]
+def generate_urls(url, search_paths, file_prefixes, file_suffixes, trailing_delimiters):
+    # type: (str, List[str], List[str], List[str], str) -> List[str]
     urls = []
-    for path in [''] + search_paths:
-        d, base = os.path.split(os.path.join(path, url))
-        for prefix in [''] + file_prefixes:
-            for suffix in [''] + file_suffixes:
-                urls.append(os.path.join(d, prefix + base + suffix))
-    return list(OrderedDict.fromkeys(urls).keys())
+
+    bare_urls = [url]
+    clean = remove_trailing_delimiters(url, trailing_delimiters)
+    if clean != url:
+        bare_urls.append(clean)
+
+    for u in bare_urls:
+        for path in [''] + search_paths:
+            d, base = os.path.split(os.path.join(path, u))
+            for prefix in [''] + file_prefixes:
+                for suffix in [''] + file_suffixes:
+                    urls.append(os.path.join(d, prefix + base + suffix))
+    return urls
 
 
 def merge_settings(window, keys):
@@ -145,7 +151,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             url,
             self.config['search_paths'],
             self.config['file_prefixes'],
-            self.config['file_suffixes']
+            self.config['file_suffixes'],
+            self.config['trailing_delimiters']
         )
 
         for u in urls:
@@ -156,6 +163,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                 return
 
             if self.view.file_name() and not u:
+                # open current file if url is empty
                 self.file_action(self.view.file_name(), show_menu)
                 return
 
@@ -168,9 +176,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self.open_tab(prepend_scheme(clean))
             return
 
-        openers = match_openers(self.config['other_custom_commands'], url)
+        openers = match_openers(self.config['other_custom_commands'], clean)
         if openers:
-            self.other_action(url, openers, show_menu)
+            self.other_action(clean, openers, show_menu)
             return
 
         self.modify_or_search_action(url)
