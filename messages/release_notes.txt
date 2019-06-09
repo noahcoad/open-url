@@ -1,6 +1,6 @@
 # 2.7.0
 ## Remove trailing delimiters
-Just got more useful. Trailing delimiters removed from file and folder paths as well, and the resulting paths __with and without__ removed delimeters are tried.
+Just got more useful. Trailing delimiters removed from file and folder paths as well, and the resulting paths __with and without__ removed delimiters are tried.
 
 
 # 2.6.0
