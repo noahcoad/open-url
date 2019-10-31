@@ -131,15 +131,21 @@ def merge_settings(window, keys):
 class OpenUrlCommand(sublime_plugin.TextCommand):
     config = None  # type: Settings
 
-    def run(self, edit=None, url: str = None, show_menu: bool = True) -> None:
+    def run(self, edit=None, url: str = None, show_menu: bool = True, show_input: bool = False) -> None:
         self.config = merge_settings(self.view.window(), settings_keys)
+
+        if show_input:
+            def on_done(input_url: str):
+                self.handle(input_url, show_menu)
+            self.view.window().show_input_panel("Path:", "", on_done, None, None)
+            return
 
         # Sublime Text has its own open_url command used for things like Help > Documentation
         # so if a url is passed, open it instead of getting text from the view
-        if url is None:
-            urls = [self.get_selection(region) for region in self.view.sel()]
-        else:
+        if url is not None:
             urls = [url]
+        else:
+            urls = [self.get_selection(region) for region in self.view.sel()]
         if len(urls) > 1:
             show_menu = False
         for url in urls:

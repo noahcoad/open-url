@@ -14,5 +14,10 @@
     "caption": "Open URL (Skip Menu)",
     "command": "open_url",
     "args": { "show_menu": false }
+  },
+  {
+    "caption": "Open URL (Use Input)",
+    "command": "open_url",
+    "args": { "show_input": true }
   }
 ]
