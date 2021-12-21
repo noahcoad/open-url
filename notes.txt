@@ -1,4 +1,5 @@
 hosted at: https://github.com/noahcoad/open-url
+and: https://packagecontrol.io/packages/Open%20URL
 
 known domain extensions from: http://data.iana.org/TLD/tlds-alpha-by-domain.txt
 
@@ -67,3 +68,13 @@ references
 next fixes
 	run excel file, ~/code/work/manpow/data_analysis/common/nwadb/tables-and-columns.xlsx
 	reveal file and folder, ~/tmp/tmp ~/tmp
+
+
+:: log
+
+2018-10-10
+	file issues
+		"new window" missing
+			original: https://screencast.com/t/luinVa8L8
+			latest: https://screencast.com/t/1TKFTr82
+			open_url.py
