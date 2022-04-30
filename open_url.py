@@ -1,17 +1,11 @@
-try:
-    from typing import TYPE_CHECKING
-except Exception:
-    TYPE_CHECKING = None
-    List = None  # type: ignore
-    Dict = None  # type: ignore
-    cast = lambda t, val: val  # noqa
-    TypedDict = lambda name, val: ""  # type: ignore # noqa
+from __future__ import annotations
 
 import os
 import re
 import subprocess
 import threading
 import webbrowser
+from typing import Any, TypedDict, cast
 from urllib.parse import quote, urlparse
 
 import sublime  # type: ignore
@@ -19,25 +13,21 @@ import sublime_plugin  # type: ignore
 
 from .url import is_url
 
-# Tricks to get pyright to run on version 3.3
-if TYPE_CHECKING:
-    from typing import Any, Dict, List, TypedDict, cast
-
 Settings = TypedDict(
     "Settings",
     {
         "delimiters": str,
         "trailing_delimiters": str,
         "web_browser": str,
-        "web_browser_path": List,
-        "web_searchers": List,
-        "file_prefixes": List,
-        "file_suffixes": List,
-        "search_paths": List,
-        "aliases": Dict,
-        "file_custom_commands": List,
-        "folder_custom_commands": List,
-        "other_custom_commands": List,
+        "web_browser_path": list,
+        "web_searchers": list,
+        "file_prefixes": list,
+        "file_suffixes": list,
+        "search_paths": list,
+        "aliases": dict,
+        "file_custom_commands": list,
+        "folder_custom_commands": list,
+        "other_custom_commands": list,
     },
 )
 
@@ -77,13 +67,12 @@ def remove_trailing_delimiters(url: str, trailing_delimiters: str) -> str:
     return url
 
 
-def match_openers(openers, url):
-    # type: (list, str) -> list
-    ret = []
+def match_openers(openers: list[dict], url: str):
+    ret: list[dict] = []
     platform = sublime.platform()
     for opener in openers:
-        pattern = opener.get("pattern")
-        o_s = opener.get("os")
+        pattern: str | None = opener.get("pattern")
+        o_s: str | None = opener.get("os")
         if pattern and not re.search(pattern, url):
             continue
         if o_s and not o_s.lower() == platform:
@@ -92,15 +81,14 @@ def match_openers(openers, url):
     return ret
 
 
-def resolve_aliases(url: str, aliases: Dict) -> str:
+def resolve_aliases(url: str, aliases: dict) -> str:
     for key, val in aliases.items():
         url = url.replace(key, val)
     return url
 
 
-def generate_urls(url, search_paths, file_prefixes, file_suffixes, trailing_delimiters):
-    # type: (str, List[str], List[str], List[str], str) -> List[str]
-    urls = []
+def generate_urls(url: str, search_paths: list[str], file_prefixes: list[str], file_suffixes: list[str], trailing_delimiters: str):
+    urls: list[str] = []
 
     bare_urls = [url]
     clean = remove_trailing_delimiters(url, trailing_delimiters)
@@ -189,14 +177,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                 self.folder_action(path, show_menu)
                 return
 
-        clean = remove_trailing_delimiters(url, self.config["trailing_delimiters"])
-        if is_url(clean) or clean.startswith("http://") or clean.startswith("https://"):
-            self.open_tab(prepend_scheme(clean))
+        clean_path = remove_trailing_delimiters(url, self.config["trailing_delimiters"])
+        if is_url(clean_path) or clean_path.startswith("http://") or clean_path.startswith("https://"):
+            self.open_tab(prepend_scheme(clean_path))
             return
 
-        openers = match_openers(self.config["other_custom_commands"], clean)
+        openers = match_openers(self.config["other_custom_commands"], clean_path)
         if openers:
-            self.other_action(clean, openers, show_menu)
+            self.other_action(clean_path, openers, show_menu)
             return
 
         self.modify_or_search_action(url)
