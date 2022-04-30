@@ -168,16 +168,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             path = self.abs_path(u)
 
             if os.path.isfile(path):
-                self.file_action(path, show_menu)
+                self.file_action(path, show_menu, u)
                 return
 
             if self.view.file_name() and not u:
                 # open current file if url is empty
-                self.file_action(self.view.file_name(), show_menu)
+                self.file_action(self.view.file_name(), show_menu, self.view.file_name())
                 return
 
             if os.path.isdir(path):
-                self.folder_action(path, show_menu)
+                self.folder_action(path, show_menu, u)
                 return
 
         clean_path = remove_trailing_delimiters(url, self.config["trailing_delimiters"])
@@ -272,7 +272,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             if "$url" in commands:
                 self.run_subprocess(commands.replace("$url", path), kwargs)
             else:
-                self.run_subprocess("{} {}".format(commands, path), kwargs)
+                self.run_subprocess(f"{commands} {path}", kwargs)
         else:
             has_url = any("$url" in command for command in commands)
             if has_url:
@@ -295,9 +295,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         def ot(url, browser, browser_path):
             if browser_path:
                 if not webbrowser.get(browser_path).open(url):
-                    sublime.error_message(
-                        'Could not open tab using your "web_browser_path" setting: {}'.format(browser_path)
-                    )
+                    sublime.error_message(f'Could not open tab using your "web_browser_path" setting: {browser_path}')
                 return
             try:
                 controller = webbrowser.get(browser or None)
@@ -309,16 +307,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         threading.Thread(target=ot, args=(url, browser, browser_path)).start()
 
-    def modify_or_search_action(self, term):
+    def modify_or_search_action(self, term: str):
         """Not a URL and not a local path; prompts user to modify path and looks
         for it again, or searches for this term using a web searcher.
         """
         searchers = self.config["web_searchers"]
-        opts = ["modify path ({})".format(term)]
-        opts += ["{} ({})".format(s["label"], term) for s in searchers]
+        opts = [f"modify path {term}"]
+        opts += [f'{s["label"]} ({term})' for s in searchers]
         sublime.active_window().show_quick_panel(opts, lambda idx: self.modify_or_search_done(idx, searchers, term))
 
-    def modify_or_search_done(self, idx, searchers, term):
+    def modify_or_search_done(self, idx: int, searchers, term: str):
         if idx < 0:
             return
         if idx == 0:
@@ -333,14 +331,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             )
         )
 
-    def url_search_modified(self, text):
+    def url_search_modified(self, text: str):
         """Call open_url again on modified path."""
         try:
             self.view.run_command("open_url", {"url": text})
         except ValueError:
             pass
 
-    def other_action(self, path, openers, show_menu):
+    def other_action(self, path: str, openers: list[dict], show_menu: bool):
         if openers and not show_menu:
             self.other_done(0, openers, path)
             return
@@ -354,29 +352,29 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         opener = openers[idx]
         self.prepare_args_and_run(opener, path)
 
-    def folder_action(self, folder: str, show_menu: bool):
+    def folder_action(self, folder: str, show_menu: bool, raw_folder: str):
         """Choose from folder actions."""
         openers = match_openers(self.config["folder_custom_commands"], folder)
 
         if openers and not show_menu:
-            self.folder_done(0, openers, folder)
+            self.folder_done(0, openers, folder, raw_folder)
             return
 
         opts = [*[opener.get("label") for opener in openers], "search..."]
-        sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, openers, folder))
+        sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, openers, folder, raw_folder))
 
-    def folder_done(self, idx: int, openers: list[dict], folder: str):
+    def folder_done(self, idx: int, openers: list[dict], folder: str, raw_folder: str):
         if idx < 0:
             return
         if idx >= len(openers):
-            self.modify_or_search_action(folder)
+            self.modify_or_search_action(raw_folder)
 
         opener = openers[idx]
         if sublime.platform() == "windows":
             folder = os.path.normcase(folder)
         self.prepare_args_and_run(opener, folder)
 
-    def file_action(self, path: str, show_menu: bool) -> None:
+    def file_action(self, path: str, show_menu: bool, raw_path: str) -> None:
         """Edit file or choose from file actions."""
         openers = match_openers(self.config["file_custom_commands"], path)
 
@@ -386,17 +384,17 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         sublime.active_window().show_quick_panel(
             ["edit", *[opener.get("label") for opener in openers], "search..."],
-            lambda idx: self.file_done(idx, openers, path),
+            lambda idx: self.file_done(idx, openers, path, raw_path),
         )
 
-    def file_done(self, idx: int, openers: list[dict], path: str):
+    def file_done(self, idx: int, openers: list[dict], path: str, raw_path: str):
         if idx < 0:
             return
         if idx == 0:
             self.view.window().open_file(path)
             return
         if idx >= len(openers) + 1:
-            self.modify_or_search_action(path)
+            self.modify_or_search_action(raw_path)
 
         opener = openers[idx - 1]
         if sublime.platform() == "windows":

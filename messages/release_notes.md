@@ -1,3 +1,11 @@
+# 2.8.0
+
+## Allow search on matched file or directory
+
+You can search for a path using searchers if even the path matches a file or directory on your file system.
+
+Support for Sublime Text 3 is now on the `st3` branch. The Sublime Text 4 version of the plugin is on `master`.
+
 # 2.7.0
 
 ## Remove trailing delimiters
