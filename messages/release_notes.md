@@ -1,10 +1,13 @@
 # 2.7.0
-## Remove trailing delimiters
-Just got more useful. Trailing delimiters removed from file and folder paths as well, and the resulting paths __with and without__ removed delimiters are tried.
 
+## Remove trailing delimiters
+
+Just got more useful. Trailing delimiters removed from file and folder paths as well, and the resulting paths **with and without** removed delimiters are tried.
 
 # 2.6.0
+
 ## Path transform settings
+
 Open URL just got a whole lot more powerful!
 
 This release adds the following path transform settings: `aliases`, `search_paths`, `file_prefixes`, `file_suffixes`, based on these issues:
@@ -23,16 +26,18 @@ Open URL can now open a file at `src/utils/module.js` with this path: `utils/mod
 
 Check out <https://github.com/noahcoad/open-url/blob/master/open_url.sublime-settings> for examples on how to use the new settings.
 
-
 # 2.5.0
+
 ## New Features
+
 Running Open URL on an empty URL in a saved file passes the file's path to your file commands.
 
-If you're in Sublime Text project, running Open URL on an empty URL in an __unsaved view__ passes the project's root directory to your folder commands.
-
+If you're in Sublime Text project, running Open URL on an empty URL in an **unsaved view** passes the project's root directory to your folder commands.
 
 # 2.4.0
+
 ## New Feature
+
 Open URL now works for multiple cursors!
 
 This works for files, folders and URLs. Try selecting both of these URLs using multiple cursors, and running Open URL.
@@ -40,14 +45,15 @@ This works for files, folders and URLs. Try selecting both of these URLs using m
 - https://www.google.com?q=hello
 - https://www.google.com?q=there
 
-
 # 2.3.0
+
 ## New Feature
+
 The `cwd` kwarg for custom commands has special handling for two values: "project_root" and "current_file".
 
 This lets you dynamically set the directory from which custom shell commands are executed, to either the project root or the directory of the currently open file.
 
-Any other value for `cwd`, e.g. "/Users/myname/code/project", is unmodified. This is currently being used by the __subl: open file at line #__ command.
+Any other value for `cwd`, e.g. "/Users/myname/code/project", is unmodified. This is currently being used by the **subl: open file at line #** command.
 
 ```
 { "label": "subl: open file at line #", "pattern": ":[0-9]+$", "commands": [ "subl" ], "kwargs": {"cwd": "project_root"} },
@@ -59,19 +65,22 @@ myfile.txt:21
 
 Give it a try!
 
-
 # 2.2.0
+
 ## Bug Fix
+
 The "reveal" option doesn't appear 3 consecutive times for opening folders, because `folder_custom_commands` are now passed to `match_openers`.
 
 ## New Feature
+
 The `commands` key in custom commands can now also be a string instead of just an array. If it's a string, the URL can be injected into it at any point by using the `$url` placeholder in the string; this placeholder is simply replaced with the URL.
 
 This makes it possible, for example, to use `pbcopy` to create a custom command for copying the full path of a file to the clipboard. Check the README for more information.
 
-
 # 2.1.1
+
 ## Big News
+
 Open URL has another maintainer! @noahcoad is letting me continue development on the awesome Open URL plugin. In the last few months I've added a lot of new features.
 
 I'll also work to handle outstanding issues and merge pull requests, if they haven't been addressed by features that were added.

@@ -5,7 +5,7 @@ import re
 import subprocess
 import threading
 import webbrowser
-from typing import Any, TypedDict, cast
+from typing import TypedDict, cast
 from urllib.parse import quote, urlparse
 
 import sublime  # type: ignore
@@ -56,7 +56,9 @@ def prepend_scheme(s: str) -> str:
 
 
 def remove_trailing_delimiters(url: str, trailing_delimiters: str) -> str:
-    """Removes any and all chars in trailing_delimiters from end of url."""
+    """
+    Removes any and all chars in trailing_delimiters from end of url.
+    """
     if not trailing_delimiters:
         return url
     while url:
@@ -67,7 +69,7 @@ def remove_trailing_delimiters(url: str, trailing_delimiters: str) -> str:
     return url
 
 
-def match_openers(openers: list[dict], url: str):
+def match_openers(openers: list[dict], url: str) -> list[dict]:
     ret: list[dict] = []
     platform = sublime.platform()
     for opener in openers:
@@ -87,7 +89,9 @@ def resolve_aliases(url: str, aliases: dict) -> str:
     return url
 
 
-def generate_urls(url: str, search_paths: list[str], file_prefixes: list[str], file_suffixes: list[str], trailing_delimiters: str):
+def generate_urls(
+    url: str, search_paths: list[str], file_prefixes: list[str], file_suffixes: list[str], trailing_delimiters: str
+):
     urls: list[str] = []
 
     bare_urls = [url]
@@ -104,8 +108,7 @@ def generate_urls(url: str, search_paths: list[str], file_prefixes: list[str], f
     return urls
 
 
-def merge_settings(window, keys):
-    # type: (Any, List[str]) -> Settings
+def merge_settings(window, keys: list[str]) -> Settings:
     settings_object = sublime.load_settings("open_url.sublime-settings")
     settings = cast(Settings, {k: settings_object.get(k) for k in keys})
 
@@ -114,19 +117,19 @@ def merge_settings(window, keys):
         return settings
     try:
         for k, v in project["settings"]["open_url"].items():
-            settings[k] = v  # type: ignore
+            settings[k] = v
         return settings
     except Exception:
         return settings
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
-    config = None  # type: Settings
+    config: Settings
 
     def run(
         self,
         edit=None,
-        url: str = None,
+        url: str | None = None,
         show_menu: bool = True,
         show_input: bool = False,
     ) -> None:
@@ -193,15 +196,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         """Returns selection. If selection contains no characters, expands it
         until hitting delimiter chars.
         """
-        start = region.begin()  # type: int
-        end = region.end()  # type: int
+        start: int = region.begin()
+        end: int = region.end()
 
         if start != end:
-            sel = self.view.substr(sublime.Region(start, end))  # type: str
+            sel: str = self.view.substr(sublime.Region(start, end))
             return sel.strip()
 
         # nothing is selected, so expand selection to nearest delimiters
-        view_size = self.view.size()  # type: int
+        view_size: int = self.view.size()
         delimiters = list(self.config["delimiters"])
 
         # move the selection back to the start of the url
@@ -250,7 +253,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             return path
         return os.path.join(project_path, path)
 
-    def prepare_args_and_run(self, opener, path):
+    def prepare_args_and_run(self, opener: dict, path: str):
         commands = opener.get("commands", [])
         kwargs = opener.get("kwargs", {})
 
@@ -351,7 +354,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         opener = openers[idx]
         self.prepare_args_and_run(opener, path)
 
-    def folder_action(self, folder, show_menu):
+    def folder_action(self, folder: str, show_menu: bool):
         """Choose from folder actions."""
         openers = match_openers(self.config["folder_custom_commands"], folder)
 
@@ -359,12 +362,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self.folder_done(0, openers, folder)
             return
 
-        opts = [opener.get("label") for opener in openers]
+        opts = [*[opener.get("label") for opener in openers], "search..."]
         sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, openers, folder))
 
-    def folder_done(self, idx, openers, folder):
+    def folder_done(self, idx: int, openers: list[dict], folder: str):
         if idx < 0:
             return
+        if idx >= len(openers):
+            self.modify_or_search_action(folder)
+
         opener = openers[idx]
         if sublime.platform() == "windows":
             folder = os.path.normcase(folder)
@@ -379,16 +385,18 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             return
 
         sublime.active_window().show_quick_panel(
-            ["edit"] + [opener.get("label") for opener in openers],
+            ["edit", *[opener.get("label") for opener in openers], "search..."],
             lambda idx: self.file_done(idx, openers, path),
         )
 
-    def file_done(self, idx, openers, path):
+    def file_done(self, idx: int, openers: list[dict], path: str):
         if idx < 0:
             return
         if idx == 0:
             self.view.window().open_file(path)
             return
+        if idx >= len(openers) + 1:
+            self.modify_or_search_action(path)
 
         opener = openers[idx - 1]
         if sublime.platform() == "windows":
