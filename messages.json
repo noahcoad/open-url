@@ -1,4 +1,11 @@
 {
   "install": "messages/install.md",
-  "2.7.0": "messages/release_notes.md"
+  "2.1.1": "messages/2.1.1.md",
+  "2.2.0": "messages/2.2.0.md",
+  "2.3.0": "messages/2.3.0.md",
+  "2.4.0": "messages/2.4.0.md",
+  "2.5.0": "messages/2.5.0.md",
+  "2.6.0": "messages/2.6.0.md",
+  "2.7.0": "messages/2.7.0.md",
+  "2.8.0": "messages/2.8.0.md"
 }

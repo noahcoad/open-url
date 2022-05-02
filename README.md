@@ -193,7 +193,7 @@ Project-specific settings override default and user settings.
 
 ## Release Notes
 
-[See Open URL's version history here](https://github.com/noahcoad/open-url/blob/master/messages/release_notes.md).
+[See Open URL's version history here](https://github.com/noahcoad/open-url/tree/master/messages).
 
 ## Development
 

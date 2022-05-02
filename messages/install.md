@@ -14,4 +14,4 @@ See here: https://github.com/noahcoad/open-url
 
 ## Release Notes
 
-See here: https://github.com/noahcoad/open-url/blob/master/messages/release_notes.md
+See here: https://github.com/noahcoad/open-url/tree/master/messages
