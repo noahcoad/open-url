@@ -191,6 +191,10 @@ Some settings, especially the URL / path transforms like `aliases`, will probabl
 
 Project-specific settings override default and user settings.
 
+### Disable default key bindings
+
+To do this, add `"open_url.disable_default_key_bindings": true` to `Preferences.sublime-settings`.
+
 ## Release Notes
 
 [See Open URL's version history here](https://github.com/noahcoad/open-url/tree/master/messages).
