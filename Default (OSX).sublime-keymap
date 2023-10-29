@@ -1,1 +1,15 @@
-[{ "keys": ["ctrl+u"], "command": "open_url" }]
+[
+  {
+    "keys": [
+      "ctrl+u"
+    ],
+    "command": "open_url",
+    "context": [
+      {
+        "key": "setting.open_url.disable_default_key_bindings",
+        "operator": "not_equal",
+        "operand": true
+      }
+    ]
+  }
+]
