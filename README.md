@@ -88,7 +88,7 @@ For another example, if you wanted to create OSX commands for adding a folder to
 ```json
 "folder_custom_commands": [
   { "label": "add to project", "os": "osx", "commands": ["open", "-a", "Sublime Text"] },
-  { "label": "open in new window", "os": "osx", "commands": ["/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"] },
+  { "label": "open in new window", "os": "osx", "commands": ["/usr/local/bin/subl"] },
 ],
 ```
 
@@ -168,7 +168,7 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   - example, for opening the folder in iTerm: `{ "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] }`
 - **other_custom_commands**
   - pass a URL which is neither a file, a folder, nor a web URL to shell commands whose pattern matches the URL
-  - example, for opening a file at a specific line number: `{ "label": "subl: open file at line #", "pattern": ":[0-9]+$", "commands": [ "subl" ], "kwargs": {"cwd": "project_root"} }`
+  - example, for opening a file at a specific line number: `{ "label": "subl: open file at line #", "pattern": ":[0-9]+$", "commands": [ "/usr/local/bin/subl" ], "kwargs": {"cwd": "project_root"} }`
 
 ### Project-Specific Settings
 
