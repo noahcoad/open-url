@@ -33,9 +33,12 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# expand variables in the path
 		url = os.path.expandvars(url)
 
-		# strip quotes if quoted
-		if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")):
+		# strip quotes/backticks if quoted
+		if (url.startswith("\"") & url.endswith("\"")) | (url.startswith("\'") & url.endswith("\'")) | (url.startswith("\`") & url.endswith("\`")):
 			url = url[1:-1]
+
+		# unescape backslash-escaped spaces (e.g. hello\ world.txt -> hello world.txt)
+		url = url.replace('\\ ', ' ')
 
 		# find the relative path to the current file 'google.com'
 		try:
@@ -76,10 +79,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 				webbrowser.open_new_tab(url)
 			elif re.search(r"\w[^\s]*\.(?:%s)[^\s]*\Z" % self.domains, url, re.IGNORECASE):
 				if not "://" in url:
-					url = "http://" + url
+					url = "https://" + url
 				webbrowser.open_new_tab(url)
 			else:
-				url = "http://google.com/#q=" + urllib.parse.quote(url, '')
+				url = "https://google.com/#q=" + urllib.parse.quote(url, '')
 				webbrowser.open_new_tab(url)
 
 	def locfile(url):
@@ -96,21 +99,47 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		end = s.b
 
 		# if nothing is selected, expand selection to nearest terminators
-		if (start == end): 
+		if (start == end):
 			view_size = self.view.size()
-			terminator = list('\t\"\'><, []()')
+			terminator = list("\t\"'`><, []()")
 
-			# move the selection back to the start of the url
-			while (start > 0
-					and not self.view.substr(start - 1) in terminator
-					and self.view.classify(start) & sublime.CLASS_LINE_START == 0):
-				start -= 1
+			# if cursor is inside an enclosing delimiter (", ', `), expand to
+			# those delimiters so filenames with spaces are captured correctly
+			found_enclosing = False
+			for delim in ['"', "'", '`']:
+				# scan back for opening delimiter on the same line
+				i = start
+				while i > 0 and self.view.classify(i) & sublime.CLASS_LINE_START == 0:
+					if self.view.substr(i - 1) == delim:
+						# found opening; scan forward for matching closing
+						j = start
+						while j < view_size:
+							if self.view.substr(j) == delim:
+								start, end = i, j
+								found_enclosing = True
+								break
+							if self.view.classify(j) & sublime.CLASS_LINE_END != 0:
+								break
+							j += 1
+						break
+					i -= 1
+				if found_enclosing:
+					break
 
-			# move end of selection forward to the end of the url
-			while (end < view_size
-					and not self.view.substr(end) in terminator
-					and self.view.classify(end) & sublime.CLASS_LINE_END == 0):
-				end += 1
+			if not found_enclosing:
+				# move the selection back to the start of the url
+				while (start > 0
+						and (not self.view.substr(start - 1) in terminator
+							or (start >= 2 and self.view.substr(start - 2) == '\\'))
+						and self.view.classify(start) & sublime.CLASS_LINE_START == 0):
+					start -= 1
+
+				# move end of selection forward to the end of the url
+				while (end < view_size
+						and (not self.view.substr(end) in terminator
+							or (end >= 1 and self.view.substr(end - 1) == '\\'))
+						and self.view.classify(end) & sublime.CLASS_LINE_END == 0):
+					end += 1
 
 		# grab the URL
 		return sublime.Region(start, end)
