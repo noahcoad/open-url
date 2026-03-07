@@ -14,3 +14,15 @@ C:\Noah\Projects\people\ChrisFritchie\ChrisFritchie.sublime-project
 ~/tmp
 /etc
 ~/
+../../../../../txt/md/journal.md::/^# 2026-03-05/
+../../../../../txt/md/journal.md::/^# 2026-03-05/
+~/txt/md/journal.md::/^# 2026-03-05/
+../../../../../txt/md/journal.md::/^# 2026-03-05/
+/Users/ncoad/txt/md/journal.md
+../../../../../txt/md/journal.md
+~/txt/md/journal.md
+~/txt/md/journal.md
+
+../../readme.md
+/Users/ncoad/Library/CloudStorage/Dropbox/code/prj/sublime/readme.md
+../../readme.md
