@@ -187,6 +187,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 						end += 2
 						if end < view_size and self.view.substr(end) in ('/', '"'):
 							loc_delim = self.view.substr(end)
+							end += 1  # skip past opening delimiter
 						continue
 					if c in terminator and not (end >= 1 and self.view.substr(end - 1) == '\\'):
 						break
