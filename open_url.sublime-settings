@@ -26,6 +26,10 @@
 	// entire pasted string in backticks. Set to false to disable.
 	"paste_relative_path_markdown_backticks": true,
 
+	// When true, deep links only support line numbers (file:42), not search
+	// or regex patterns. Reduces ambiguity for users who don't need those features.
+	"deep_link_line_number_only": false,
+
 	"autoactions": [
 		{ "os": "win", "endswith": [".exe", ".com"], "action": "run" },
 		{ "os": "win", "endswith": [".bat", ".cmd"], "action": "menu", "terminal": true, "pause": true },

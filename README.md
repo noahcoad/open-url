@@ -33,16 +33,16 @@ Filenames with spaces are supported via quoting (`"my file.txt"`) or backslash e
 
 ### Deep Links — Linking to a Location Inside a File
 
-Use `::` to link to a specific position within a file. Press `ctrl+u` on the link to open the file and jump there.
+Use `:` to link to a specific position within a file. Press `ctrl+u` on the link to open the file and jump there.
 
 #### Syntax
 
 | Link | Behavior |
 |------|----------|
-| `notes.txt::42` | Open file at line 42 |
-| `notes.txt::"puppy dog"` | Open file, jump to first occurrence of `puppy dog` |
-| `notes.txt::/^## Usage/` | Open file, jump to first line matching regex `^## Usage` |
-| `"my notes.txt"::42` | Quoted filename (spaces allowed) with line number |
+| `notes.txt:42` | Open file at line 42 |
+| `notes.txt:"puppy dog"` | Open file, jump to first occurrence of `puppy dog` |
+| `notes.txt:/^## Usage/` | Open file, jump to first line matching regex `^## Usage` |
+| `"my notes.txt":42` | Quoted filename (spaces allowed) with line number |
 
 If the location is not found in the file, a dialog is shown.
 
@@ -53,13 +53,13 @@ Copies the current file path plus a location anchor to the clipboard.
 
 | Situation | Output |
 |-----------|--------|
-| No selection, line has text | `file.md::/^first five words of line/` |
-| No selection, empty line | `file.md::42` (line number) |
-| Text selected | `file.md::"selected text"` |
+| No selection, line has text | `file.md:/^first five words of line/` |
+| No selection, empty line | `file.md:42` (line number) |
+| Text selected | `file.md:"selected text"` |
 
 #### `copy_path_transform` setting
 
-An optional command to transform the file path before the `::location` is appended — useful for shortening or normalizing paths. Set in `Preferences > Package Settings > Open URL > Settings - User`:
+An optional command to transform the file path before the `:location` is appended — useful for shortening or normalizing paths. Set in `Preferences > Package Settings > Open URL > Settings - User`:
 
 ```json
 {
@@ -72,7 +72,7 @@ An optional command to transform the file path before the `::location` is append
 
 ### Copy Transformed Path
 
-Copies the current file path after running it through `copy_path_transform` — the same transform used by Copy Deep Link, but without any `::location` suffix. Useful as an alternative to the built-in "File: Copy Path" when you want the normalized/shortened form.
+Copies the current file path after running it through `copy_path_transform` — the same transform used by Copy Deep Link, but without any `:location` suffix. Useful as an alternative to the built-in "File: Copy Path" when you want the normalized/shortened form.
 
 This command only appears in menus and the command palette when `copy_path_transform` is configured in your User settings.
 
@@ -83,14 +83,14 @@ Pastes the clipboard contents with the file path converted to be relative to the
 
 For example, if the clipboard contains:
 ```
-~/code/prj/sublime/active/open-url/notes.txt::/^:: change log/
+~/code/prj/sublime/active/open-url/notes.txt:/^:: change log/
 ```
 and the current file is under `active/`, it pastes:
 ```
-open-url/notes.txt::/^:: change log/
+open-url/notes.txt:/^:: change log/
 ```
 
-Works with plain paths, `::location` suffixes, and quoted paths. Web URLs (`://`) are pasted unchanged.
+Works with plain paths, `:location` suffixes, and quoted paths. Web URLs (`://`) are pasted unchanged.
 
 
 
@@ -113,6 +113,17 @@ Other examples:
 - `"https://search.brave.com/search?q={query}"`
 - `"https://duckduckgo.com/?q={query}"`
 - `"https://www.bing.com/search?q={query}"`
+
+
+### `deep_link_line_number_only`
+
+When `true`, deep links only support line numbers (`file:42`), not search (`file:"text"`) or regex (`file:/pattern/`). This reduces ambiguity for users who don't need those features. Default: `false`.
+
+```json
+{
+    "deep_link_line_number_only": true
+}
+```
 
 
 ### `autoactions`

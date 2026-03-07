@@ -5,10 +5,10 @@ C:\Noah\Projects\people\ChrisFritchie\ChrisFritchie.sublime-project
 ~/tmp
 /etc
 ~/
-../../../../../txt/md/journal.md::/^# 2026-03-05/
-../../../../../txt/md/journal.md::/^# 2026-03-05/
-~/txt/md/journal.md::/^# 2026-03-05/
-../../../../../txt/md/journal.md::/^# 2026-03-05/
+../../../../../txt/md/journal.md:/^# 2026-03-05/
+../../../../../txt/md/journal.md:/^# 2026-03-05/
+~/txt/md/journal.md:/^# 2026-03-05/
+../../../../../txt/md/journal.md:/^# 2026-03-05/
 /Users/ncoad/txt/md/journal.md
 ../../../../../txt/md/journal.md
 ~/txt/md/journal.md
@@ -16,19 +16,21 @@ C:\Noah\Projects\people\ChrisFritchie\ChrisFritchie.sublime-project
 ../../readme.md
 /Users/ncoad/Library/CloudStorage/Dropbox/code/prj/sublime/readme.md
 ../../readme.md
-~/code/prj/sublime/active/open-url/example.txt
-~/code/prj/sublime/active/open-url/example.txt
+~/code/prj/sublime/active/open-url/wiki/example.txt
 example.txt
 ~/code/prj/sublime/active/open-url/example.txt~/code/prj/sublime/active/open-url/example.txt
 example.txt
 ~/code/prj/sublime/active/open-url/tests.txt
 tests.txt
-tests.txt::/^tests\.txt/
-prompts.md::/^keep\ in\ mind\ that\ the/
-prompts.md::/^\#\#\ link\-inside\-file/
-prompts.md::/^##\ link-inside-file/
-prompts.md::/^## link-inside-file/
-prompts.md::"we need a new"
-prompts.md::2
-/Users/ncoad/Library/CloudStorage/Dropbox/code/prj/sublime/active/open-url/prompts.md::"that copies to the clipboard"
-tlds-alpha-by-domain.txt::/^AARP/
+tests.txt:/^tests\.txt/
+prompts.md:/^keep\ in\ mind\ that\ the/
+prompts.md:/^\#\#\ link\-inside\-file/
+prompts.md:/^##\ link-inside-file/
+prompts.md:/^## link-inside-file/
+prompts.md:"we need a new"
+prompts.md:2
+/Users/ncoad/Library/CloudStorage/Dropbox/code/prj/sublime/active/open-url/prompts.md:"that copies to the clipboard"
+tlds-alpha-by-domain.txt:/^AARP/
+coad.net:8080
+http://google.com/
+https://about.google

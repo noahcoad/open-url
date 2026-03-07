@@ -5,6 +5,21 @@
 import sublime, sublime_plugin
 import webbrowser, urllib, urllib.parse, threading, re, os, subprocess, platform, socket
 
+def _find_loc_sep(text, line_number_only=False):
+	"""Find the last ':' that starts a valid deep-link location.
+	Returns the index of the ':', or -1 if not found."""
+	for i in range(len(text) - 1, 0, -1):
+		if text[i] == ':' and i + 1 < len(text):
+			nxt = text[i + 1]
+			if nxt.isdigit():
+				return i
+			if not line_number_only:
+				if nxt == '"':
+					return i
+				if nxt == '/' and (i + 2 >= len(text) or text[i + 2] != '/'):
+					return i
+	return -1
+
 class SelectUrlCommand(sublime_plugin.TextCommand):
 	def run(self, edit=None, url=None):
 		region = OpenUrlCommand(self.view).find_selection()
@@ -38,19 +53,25 @@ class CopyDeepLinkCommand(sublime_plugin.TextCommand):
 				return
 
 		sel = self.view.sel()[0]
+		config = sublime.load_settings("open_url.sublime-settings")
+		line_only = config.get("deep_link_line_number_only", False)
 		if not sel.empty():
-			loc_text = self.view.substr(sel)
-			link = '%s::"%s"' % (file_path, loc_text)
+			if line_only:
+				line_num = self.view.rowcol(sel.begin())[0] + 1
+				link = "%s:%d" % (file_path, line_num)
+			else:
+				loc_text = self.view.substr(sel)
+				link = '%s:"%s"' % (file_path, loc_text)
 		else:
 			cursor = sel.begin()
 			line_text = self.view.substr(self.view.line(cursor)).strip()
-			if not line_text:
+			if not line_text or line_only:
 				line_num = self.view.rowcol(cursor)[0] + 1
-				link = "%s::%d" % (file_path, line_num)
+				link = "%s:%d" % (file_path, line_num)
 			else:
 				words = line_text.split()[:5]
 				escaped = re.sub(r'([.^$*+?{}[\]\\|()])', r'\\\1', ' '.join(words))
-				link = "%s::/^%s/" % (file_path, escaped)
+				link = "%s:/^%s/" % (file_path, escaped)
 		sublime.set_clipboard(link)
 		sublime.status_message("Copied: %s" % link)
 
@@ -97,8 +118,10 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 				self.view.replace(edit, region, raw)
 			return
 
-		# split off ::location suffix
-		sep_idx = raw.find("::")
+		# split off :location suffix
+		config = sublime.load_settings("open_url.sublime-settings")
+		line_only = config.get("deep_link_line_number_only", False)
+		sep_idx = _find_loc_sep(raw, line_number_only=line_only)
 		if sep_idx != -1:
 			path_part = raw[:sep_idx]
 			loc_suffix = raw[sep_idx:]
@@ -181,7 +204,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# unescape backslash-escaped spaces (e.g. hello\ world.txt -> hello world.txt)
 		url = url.replace('\\ ', ' ')
 
-		# parse file::location syntax
+		# parse file:location syntax
+		original_url = url
 		url, location = self.parse_file_location(url)
 
 		# find the relative path to the current file 'google.com'
@@ -220,8 +244,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		
 		else:
 			if location is not None:
-				sublime.message_dialog("File Not Found: %s" % url)
-			elif "://" in url:
+				# path:location didn't resolve to a file; retry original as URL
+				url = original_url
+				location = None
+			if "://" in url:
 				webbrowser.open_new_tab(url)
 			elif re.search(r"\w[^\s]*\.(?:%s)[^\s]*\Z" % self.domains, url, re.IGNORECASE):
 				if not "://" in url:
@@ -266,8 +292,12 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 								after_close = j + 1
 								if (after_close + 1 < view_size
 										and self.view.substr(after_close) == ':'
-										and self.view.substr(after_close + 1) == ':'):
-									suffix_end = after_close + 2
+										and (self.view.substr(after_close + 1).isdigit()
+											or self.view.substr(after_close + 1) == '"'
+											or (self.view.substr(after_close + 1) == '/'
+												and (after_close + 2 >= view_size
+													or self.view.substr(after_close + 2) != '/')))):
+									suffix_end = after_close + 1
 									while (suffix_end < view_size
 											and self.view.substr(suffix_end) not in list('\t ><,[]()\'\"')
 											and self.view.classify(suffix_end) & sublime.CLASS_LINE_END == 0):
@@ -295,7 +325,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 					start -= 1
 
 				# move end of selection forward to the end of the url
-				# once past a :: separator, spaces inside /regex/ or "string" are not terminators
+				# once past a : separator, spaces inside /regex/ or "string" are not terminators
 				loc_delim = None
 				passed_sep = False
 				while end < view_size:
@@ -308,13 +338,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 							break
 						end += 1
 						continue
-					if not passed_sep and c == ':' and end + 1 < view_size and self.view.substr(end + 1) == ':':
-						passed_sep = True
-						end += 2
-						if end < view_size and self.view.substr(end) in ('/', '"'):
-							loc_delim = self.view.substr(end)
-							end += 1  # skip past opening delimiter
-						continue
+					if not passed_sep and c == ':' and end + 1 < view_size:
+						nxt = self.view.substr(end + 1)
+						if nxt.isdigit() or nxt == '"' or (nxt == '/' and (end + 2 >= view_size or self.view.substr(end + 2) != '/')):
+							passed_sep = True
+							end += 1  # skip past ':'
+							if end < view_size and self.view.substr(end) in ('/', '"'):
+								loc_delim = self.view.substr(end)
+								end += 1  # skip past opening delimiter
+							continue
 					if c in terminator and not (end >= 1 and self.view.substr(end - 1) == '\\'):
 						break
 					end += 1
@@ -329,11 +361,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# don't split web URLs
 		if "://" in url:
 			return (url, None)
-		sep_idx = url.find("::")
+		config = sublime.load_settings("open_url.sublime-settings")
+		line_only = config.get("deep_link_line_number_only", False)
+		sep_idx = _find_loc_sep(url, line_number_only=line_only)
 		if sep_idx == -1:
 			return (url, None)
 		raw_path = url[:sep_idx]
-		loc_token = url[sep_idx + 2:]
+		loc_token = url[sep_idx + 1:]
 		# strip surrounding quotes from raw_path
 		if (raw_path.startswith('"') and raw_path.endswith('"')) or \
 				(raw_path.startswith("'") and raw_path.endswith("'")):

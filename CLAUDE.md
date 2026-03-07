@@ -27,8 +27,9 @@ There are no tests, no linting tools, and no CI configured. Manual testing is do
 
 ## Architecture
 
-All logic lives in `open_url.py`. The two commands are:
+All logic lives in `open_url.py`. Key components:
 
+- **`_find_loc_sep(text, line_number_only)`** — module-level helper that scans right-to-left for the last `:` followed by a valid location starter (digit, `"`, or `/` not `//`). Used by deep link parsing, paste, and copy commands.
 - **`SelectUrlCommand`** — expands cursor position to URL boundaries and copies to clipboard
 - **`OpenUrlCommand`** — the main command; detects what the selection is and acts on it
 
