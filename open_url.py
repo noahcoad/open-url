@@ -95,7 +95,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.choose_action(relative_path, location)
 		
 		else:
-			if "://" in url:
+			if location is not None:
+				sublime.message_dialog("File Not Found: %s" % url)
+			elif "://" in url:
 				webbrowser.open_new_tab(url)
 			elif re.search(r"\w[^\s]*\.(?:%s)[^\s]*\Z" % self.domains, url, re.IGNORECASE):
 				if not "://" in url:
@@ -233,7 +235,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			view.sel().add(region)
 			view.show_at_center(region)
 		else:
-			view.window().status_message("Location not found: %s" % location['value'])
+			sublime.message_dialog("Location Not Found: %s" % location['value'])
 
 	# for files, as the user if they's like to edit or run the file
 	def choose_action(self, path, location=None):
