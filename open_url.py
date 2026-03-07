@@ -54,6 +54,50 @@ class CopyFilePathWithLocationCommand(sublime_plugin.TextCommand):
 		sublime.set_clipboard(link)
 		sublime.status_message("Copied: %s" % link)
 
+class PasteRelativePathCommand(sublime_plugin.TextCommand):
+	def run(self, edit):
+		raw = sublime.get_clipboard().strip()
+		if not raw:
+			return
+
+		# web URLs — nothing to relativize, paste as-is
+		if "://" in raw:
+			for region in self.view.sel():
+				self.view.replace(edit, region, raw)
+			return
+
+		# split off ::location suffix
+		sep_idx = raw.find("::")
+		if sep_idx != -1:
+			path_part = raw[:sep_idx]
+			loc_suffix = raw[sep_idx:]
+		else:
+			path_part = raw
+			loc_suffix = ""
+
+		# strip surrounding quotes from path
+		if (path_part.startswith('"') and path_part.endswith('"')) or \
+				(path_part.startswith("'") and path_part.endswith("'")):
+			path_part = path_part[1:-1]
+
+		abs_path = os.path.expanduser(os.path.expandvars(path_part))
+
+		current_file = self.view.file_name()
+		if not current_file:
+			for region in self.view.sel():
+				self.view.replace(edit, region, raw)
+			return
+
+		current_dir = os.path.dirname(current_file)
+		try:
+			rel_path = os.path.relpath(abs_path, current_dir)
+		except ValueError:
+			rel_path = abs_path
+
+		result = rel_path + loc_suffix
+		for region in self.view.sel():
+			self.view.replace(edit, region, result)
+
 class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	# enter debug mode on Noah's machine

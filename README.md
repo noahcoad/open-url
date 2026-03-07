@@ -22,3 +22,18 @@ Use `::` to link to a specific location within a file. Place the cursor on the l
 - **Text selected** — uses the selected text as a quoted search: `file.md::"selected text"`
 
 Paste the result anywhere and `ctrl+u` will open the file and jump to that line.
+
+### Paste Relative Path
+
+`ctrl+alt+v` pastes the clipboard contents with the file path converted to be relative to the current file.
+
+For example, if the clipboard contains:
+```
+~/code/prj/sublime/active/open-url/notes.txt::/^:: change log/
+```
+and the current file is under `active/`, it pastes:
+```
+open-url/notes.txt::/^:: change log/
+```
+
+Works with plain paths, `::location` suffixes, and quoted paths. Web URLs (`://`) are pasted unchanged.
