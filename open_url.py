@@ -95,7 +95,13 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 		except ValueError:
 			rel_path = abs_path
 
-		result = rel_path + loc_suffix
+		home = os.path.expanduser("~")
+		if abs_path.startswith(home + os.sep):
+			tilde_path = "~" + abs_path[len(home):]
+		else:
+			tilde_path = abs_path
+
+		result = min(rel_path, tilde_path, key=len) + loc_suffix
 		for region in self.view.sel():
 			self.view.replace(edit, region, result)
 
