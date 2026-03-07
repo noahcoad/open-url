@@ -135,8 +135,15 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 			rel_path = abs_path
 
 		result = min(rel_path, tilde_path, key=len) + loc_suffix
-		for region in self.view.sel():
-			self.view.replace(edit, region, result)
+		regions = list(self.view.sel())
+		self.view.sel().clear()
+		offset = 0
+		for region in regions:
+			adjusted = sublime.Region(region.begin() + offset, region.end() + offset)
+			self.view.replace(edit, adjusted, result)
+			new_pos = adjusted.begin() + len(result)
+			self.view.sel().add(sublime.Region(new_pos, new_pos))
+			offset += len(result) - region.size()
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
 
