@@ -1,0 +1,46 @@
+
+:: improvement ideas and bugs
+
+backlog
+	priority
+		Open multiline items with a return or carrage return like these:
+			http://google.com
+			gmail.com
+			http://en.wikipedia.org/wiki/Funky_Cold_Medina
+	ideas
+		open paths with posix variables, like $HOME/myfile.txt
+		custom open handlers, like registering a regex with a way to handle it, like 'bug 123' will open in work item tracking system
+		add run with, lets user pick an app to run a file with instead of just the shell
+
+bugs
+	known
+	fixed
+		whitespacing on edges prevent detection of url type
+		open_url is evidently a poorly documented but built-in sublime command, so this is overriding some default sublime features like pulling up the Documentation from the help menu
+	archive
+		path not opening in MacOS, like /bin
+		not detecting 'ends with' if url is in quotes
+
+implemented/fixed
+	for folders add 'open in new window'
+	for files, add 'reveal'
+	for folders, add 'reveal'
+	for folders add 'add to project'
+	add support for ~ in folders
+	support all icann top level domain extensions
+	bug: open_url is a registered command, need to find another command name
+	setting to always run or always edit certain files
+		"endswith", ".sublime-project", "run"
+		"endswith", ".sln", "run"
+		"endswith", ".txt", "edit"
+	fix open/run of files, like: ~/code/py/learn/sample.xlsx
+	2026-03-07 scan to see if cursor is inside quotes to a path that exists, "c:\temp\folder w space\file w space.txt" opens
+
+archive
+	support .openurl files in folders that would specify to either open a specific file when opening the folder, or use a project file -- implemented with AutoOpenNotes plugin
+	add "copy full path" for existing files and folders
+	swap platform environment variables, on PC: $myvar => %myvar%, on posix: %myvar% => $myvar
+	if a folder, check to see if there's a .sublime-project file in there and give that as an option to open instead of just the file
+	aliases, [myfile] somewhere in the file # Open this [myfile] = c:\asdasdasd
+	look in project for matching file name (relative path not required)
+
