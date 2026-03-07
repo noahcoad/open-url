@@ -19,6 +19,6 @@ Use `::` to link to a specific location within a file. Place the cursor on the l
 `ctrl+alt+u` copies the current file path with a location anchor to the clipboard.
 
 - **No selection** — uses the first 5 words of the current line as a regex anchor: `file.md::/^## My Heading/`
-- **Text selected** — uses the selected text as the anchor: `file.md::/^selected text/`
+- **Text selected** — uses the selected text as a quoted search: `file.md::"selected text"`
 
 Paste the result anywhere and `ctrl+u` will open the file and jump to that line.
