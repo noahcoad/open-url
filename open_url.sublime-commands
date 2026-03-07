@@ -12,6 +12,10 @@
 		"command": "copy_deep_link"
 	},
 	{
+		"caption": "Copy Transformed Path",
+		"command": "copy_transformed_path"
+	},
+	{
 		"caption": "Paste Relative Path",
 		"command": "paste_relative_path"
 	}

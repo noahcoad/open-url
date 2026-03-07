@@ -2,5 +2,6 @@
 	{ "command": "open_url" },
 	{ "command": "select_url" },
 	{ "caption": "Copy Deep Link", "command": "copy_deep_link" },
+	{ "caption": "Copy Transformed Path", "command": "copy_transformed_path" },
 	{ "caption": "Paste Relative Path", "command": "paste_relative_path" }
 ]

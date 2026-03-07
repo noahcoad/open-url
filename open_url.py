@@ -54,6 +54,37 @@ class CopyDeepLinkCommand(sublime_plugin.TextCommand):
 		sublime.set_clipboard(link)
 		sublime.status_message("Copied: %s" % link)
 
+class CopyTransformedPathCommand(sublime_plugin.TextCommand):
+	def run(self, edit=None):
+		file_path = self.view.file_name()
+		if not file_path:
+			sublime.status_message("File has no path")
+			return
+		config = sublime.load_settings("open_url.sublime-settings")
+		transform = config.get("copy_path_transform", "")
+		cmd = transform.replace("{path}", file_path)
+		try:
+			result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			stdout = result.stdout.decode("utf-8").strip()
+			stderr = result.stderr.decode("utf-8").strip()
+			if result.returncode != 0:
+				msg = "copy_path_transform failed (exit %d): %s" % (result.returncode, stderr or stdout)
+				sublime.status_message(msg)
+				print("open_url " + msg)
+				return
+			file_path = stdout
+		except Exception as e:
+			msg = "copy_path_transform error: %s" % e
+			sublime.status_message(msg)
+			print("open_url " + msg)
+			return
+		sublime.set_clipboard(file_path)
+		sublime.status_message("Copied: %s" % file_path)
+
+	def is_visible(self):
+		config = sublime.load_settings("open_url.sublime-settings")
+		return bool(config.get("copy_path_transform", ""))
+
 class PasteRelativePathCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		raw = sublime.get_clipboard().strip()
