@@ -78,3 +78,15 @@ next fixes
 			original: https://screencast.com/t/luinVa8L8
 			latest: https://screencast.com/t/1TKFTr82
 			open_url.py
+
+2026-03-07 adding linking to locations within text
+
+:: scratchpad
+prompts.md::/^keep\ in\ mind\ that\ the/
+prompts.md::/^\#\#\ link\-inside\-file/
+prompts.md::/^##\ link-inside-file/
+prompts.md::/^## link-inside-file/
+prompts.md::"we need a new"
+prompts.md::2
+/Users/ncoad/Library/CloudStorage/Dropbox/code/prj/sublime/active/open-url/prompts.md::"that copies to the clipboard"
+tlds-alpha-by-domain.txt::/^AARP/

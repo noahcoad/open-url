@@ -12,11 +12,3 @@ keep in mind that the file name itself may be encapsuted like "hello world.txt":
 or have slash space like: hello\ world.txt:XXX
 and we need a new sublime command called "Copy Path with Location" that copies to the clipboard the file path with one of these target methods, for now let's have it use the regex syntax with the first 5 words of a line, like `file::\^## my header\`
 and on "Open URL" it should both open the file and go to the target location
-prompts.md::/^keep\ in\ mind\ that\ the/
-prompts.md::/^\#\#\ link\-inside\-file/
-prompts.md::/^##\ link-inside-file/
-prompts.md::/^## link-inside-file/
-prompts.md::"we need a new"
-prompts.md::2
-/Users/ncoad/Library/CloudStorage/Dropbox/code/prj/sublime/active/open-url/prompts.md::/^sublime command called/
-/Users/ncoad/Library/CloudStorage/Dropbox/code/prj/sublime/active/open-url/prompts.md::"that copies to the clipboard"
