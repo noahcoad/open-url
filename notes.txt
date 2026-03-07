@@ -15,7 +15,6 @@ known domain extensions from: http://data.iana.org/TLD/tlds-alpha-by-domain.txt
 2014-04-10  added open_url.sublime-settings for .bat .cmd on windows
 2017-01-17  added "Select URL" to highlight and copy to clipboard the url/file
 
-
 bugs
 	known
 		path not opening in MacOS, like /bin
