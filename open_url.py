@@ -23,12 +23,13 @@ class CopyFilePathWithLocationCommand(sublime_plugin.TextCommand):
 			cmd = transform.replace("{path}", file_path)
 			print("open_url copy_path_transform cmd: %s" % cmd)
 			try:
-				result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				stdout = result.stdout.decode("utf-8").strip()
-				stderr = result.stderr.decode("utf-8").strip()
-				print("open_url copy_path_transform exit=%d stdout=%r stderr=%r" % (result.returncode, stdout, stderr))
-				if result.returncode != 0:
-					msg = "copy_path_transform failed (exit %d): %s" % (result.returncode, stderr or stdout)
+				proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				stdout, stderr = proc.communicate()
+				stdout = stdout.decode("utf-8").strip()
+				stderr = stderr.decode("utf-8").strip()
+				print("open_url copy_path_transform exit=%d stdout=%r stderr=%r" % (proc.returncode, stdout, stderr))
+				if proc.returncode != 0:
+					msg = "copy_path_transform failed (exit %d): %s" % (proc.returncode, stderr or stdout)
 					sublime.status_message(msg)
 					print("open_url " + msg)
 					return
