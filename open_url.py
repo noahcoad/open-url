@@ -174,7 +174,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 					url = "https://" + url
 				webbrowser.open_new_tab(url)
 			else:
-				url = "https://google.com/#q=" + urllib.parse.quote(url, '')
+				config = sublime.load_settings("open_url.sublime-settings")
+				search_url = config.get("browser_search", "https://www.google.com/search?q={query}")
+				url = search_url.replace("{query}", urllib.parse.quote(url, ''))
 				webbrowser.open_new_tab(url)
 
 	def locfile(url):

@@ -13,6 +13,10 @@
 // action=run,edit,menu
 // menu exists so that if the user does choose run, you can specify how to run the selected file
 {
+	// Search URL used when the selected text doesn't match a file, folder, or URL.
+	// {query} is replaced with the URL-encoded search text.
+	"browser_search": "https://www.google.com/search?q={query}",
+
 	// Optional command to transform the file path before it is used in "Copy Deep Link".
 	// {path} is replaced with the file path. stdout of the command becomes the new path.
 	// Example: "/opt/homebrew/bin/python3.12 clipfix.py --input text --output stdout --quiet {path}"
