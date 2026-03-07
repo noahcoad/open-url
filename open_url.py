@@ -88,7 +88,8 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 				self.view.replace(edit, region, raw)
 			return
 
-		current_dir = os.path.dirname(current_file)
+		current_dir = os.path.realpath(os.path.dirname(current_file))
+		abs_path = os.path.realpath(abs_path)
 		try:
 			rel_path = os.path.relpath(abs_path, current_dir)
 		except ValueError:
