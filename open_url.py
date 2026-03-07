@@ -11,6 +11,23 @@ class SelectUrlCommand(sublime_plugin.TextCommand):
 		self.view.sel().add(region)
 		sublime.set_clipboard(self.view.substr(region).strip())
 
+class CopyFilePathWithLocationCommand(sublime_plugin.TextCommand):
+	def run(self, edit=None):
+		file_path = self.view.file_name()
+		if not file_path:
+			sublime.status_message("File has no path")
+			return
+		cursor = self.view.sel()[0].begin()
+		line_text = self.view.substr(self.view.line(cursor)).strip()
+		if not line_text:
+			sublime.status_message("Current line is empty")
+			return
+		words = line_text.split()[:5]
+		escaped = re.escape(' '.join(words))
+		link = "%s::/^%s/" % (file_path, escaped)
+		sublime.set_clipboard(link)
+		sublime.status_message("Copied: %s" % link)
+
 class OpenUrlCommand(sublime_plugin.TextCommand):
 
 	# enter debug mode on Noah's machine
@@ -40,6 +57,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# unescape backslash-escaped spaces (e.g. hello\ world.txt -> hello world.txt)
 		url = url.replace('\\ ', ' ')
 
+		# parse file::location syntax
+		url, location = self.parse_file_location(url)
+
 		# find the relative path to the current file 'google.com'
 		try:
 			relative_path = os.path.normpath(os.path.join(os.path.dirname(self.view.file_name()), url))
@@ -63,16 +83,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.folder_action(relative_path)
 		
 		elif os.path.exists(url):
-			self.choose_action(url)
+			self.choose_action(url, location)
 
 		elif os.path.exists(os.path.expandvars(url)):
-			self.choose_action(os.path.expandvars(url))
+			self.choose_action(os.path.expandvars(url), location)
 		
 		elif os.name == 'posix' and os.path.exists(os.path.expanduser(url)):
-			self.choose_action(os.path.expanduser(url))
+			self.choose_action(os.path.expanduser(url), location)
 		
 		elif relative_path and os.path.exists(relative_path):
-			self.choose_action(relative_path)
+			self.choose_action(relative_path, location)
 		
 		else:
 			if "://" in url:
@@ -115,7 +135,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 						j = start
 						while j < view_size:
 							if self.view.substr(j) == delim:
-								start, end = i, j
+								after_close = j + 1
+								if (after_close + 1 < view_size
+										and self.view.substr(after_close) == ':'
+										and self.view.substr(after_close + 1) == ':'):
+									suffix_end = after_close + 2
+									while (suffix_end < view_size
+											and self.view.substr(suffix_end) not in list('\t ><,[]()\'\"')
+											and self.view.classify(suffix_end) & sublime.CLASS_LINE_END == 0):
+										suffix_end += 1
+									start = i - 1
+									end = suffix_end
+								else:
+									start, end = i, j
 								found_enclosing = True
 								break
 							if self.view.classify(j) & sublime.CLASS_LINE_END != 0:
@@ -147,8 +179,64 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 	def selection(self):
 		return self.view.substr(self.find_selection()).strip()
 
+	def parse_file_location(self, url):
+		# don't split web URLs
+		if "://" in url:
+			return (url, None)
+		sep_idx = url.find("::")
+		if sep_idx == -1:
+			return (url, None)
+		raw_path = url[:sep_idx]
+		loc_token = url[sep_idx + 2:]
+		# strip surrounding quotes from raw_path
+		if (raw_path.startswith('"') and raw_path.endswith('"')) or \
+				(raw_path.startswith("'") and raw_path.endswith("'")):
+			raw_path = raw_path[1:-1]
+		# parse location token
+		if loc_token.isdigit():
+			return (raw_path, {'type': 'line', 'value': int(loc_token)})
+		elif loc_token.startswith('"') and loc_token.endswith('"'):
+			return (raw_path, {'type': 'search', 'value': loc_token[1:-1]})
+		elif loc_token.startswith('/') and loc_token.endswith('/') and len(loc_token) >= 2:
+			return (raw_path, {'type': 'regex', 'value': loc_token[1:-1]})
+		else:
+			# malformed; don't break normal flow
+			return (url, None)
+
+	def open_file_at_location(self, path, location):
+		if location is None:
+			self.view.window().open_file(path)
+		elif location['type'] == 'line':
+			self.view.window().open_file("%s:%d:0" % (path, location['value']), sublime.ENCODED_POSITION)
+		else:
+			view = self.view.window().open_file(path)
+			self._navigate_when_loaded(view, location)
+
+	def _navigate_when_loaded(self, view, location):
+		if view.is_loading():
+			sublime.set_timeout(lambda: self._navigate_when_loaded(view, location), 100)
+		else:
+			self._navigate_in_view(view, location)
+
+	def _navigate_in_view(self, view, location):
+		if location['type'] == 'search':
+			pattern = re.escape(location['value'])
+			flags = sublime.IGNORECASE
+		elif location['type'] == 'regex':
+			pattern = location['value']
+			flags = 0
+		else:
+			return
+		region = view.find(pattern, 0, flags)
+		if region is not None and not region.empty():
+			view.sel().clear()
+			view.sel().add(region)
+			view.show_at_center(region)
+		else:
+			view.window().status_message("Location not found: %s" % location['value'])
+
 	# for files, as the user if they's like to edit or run the file
-	def choose_action(self, path):
+	def choose_action(self, path, location=None):
 		action = 'menu'
 		autoinfo = None
 		config = sublime.load_settings("open_url.sublime-settings")
@@ -175,11 +263,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		# either show a menu or perform the action
 		if action == 'menu':
-			sublime.active_window().show_quick_panel(["edit", "run", "reveal", "new window", "system open"], lambda idx: self.select_done(idx, autoinfo, path))
+			sublime.active_window().show_quick_panel(["edit", "run", "reveal", "new window", "system open"], lambda idx: self.select_done(idx, autoinfo, path, location))
 		elif action == 'edit':
-			self.select_done(0, autoinfo, path)
+			self.select_done(0, autoinfo, path, location)
 		elif action == 'run':
-			self.select_done(1, autoinfo, path)
+			self.select_done(1, autoinfo, path, location)
 		else:
 			raise 'unsupported action'
 
@@ -262,8 +350,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		self.runapp(cmd)
 
 	# for files, either open the file for editing in sublime, or shell execute the file
-	def select_done(self, idx, autoinfo, path):
-		if idx == 0: self.view.window().open_file(path)
+	def select_done(self, idx, autoinfo, path, location=None):
+		if idx == 0: self.open_file_at_location(path, location)
 		elif idx == 1: self.runfile(autoinfo, path)
 		elif idx == 2: self.reveal(path)
 		elif idx == 3: self.open_in_new_window(path)

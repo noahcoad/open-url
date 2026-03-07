@@ -1,4 +1,5 @@
-[  
+[
 	{ "command": "open_url" },
-	{ "command": "select_url" }
-]  
+	{ "command": "select_url" },
+	{ "caption": "Copy File Path with Location", "command": "copy_file_path_with_location" }
+]
