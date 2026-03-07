@@ -25,7 +25,7 @@ Place the cursor anywhere in a URL, file path, or domain name and press `ctrl+u`
 2. **File** — opens for editing, or runs/reveals based on `autoactions` settings
 3. **URL** (`://`) — opens in the default browser
 4. **Bare domain** (`google.com`) — prepends `https://` and opens in browser
-5. **Anything else** — performs a Google search
+5. **Anything else** — performs a browser search (Google by default, configurable via `browser_search`)
 
 Filenames with spaces are supported via quoting (`"my file.txt"`) or backslash escaping (`my\ file.txt`).
 
@@ -90,6 +90,23 @@ Works with plain paths, `::location` suffixes, and quoted paths. Web URLs (`://`
 ## Settings
 
 Configure via `Preferences > Package Settings > Open URL > Settings - User`.
+
+### `browser_search`
+
+URL template used when the selected text doesn't match a file, folder, or URL. `{query}` is replaced with the URL-encoded search text.
+
+```json
+{
+    "browser_search": "https://www.google.com/search?q={query}"
+}
+```
+
+Other examples:
+- `"https://search.brave.com/search?q={query}"`
+- `"https://duckduckgo.com/?q={query}"`
+- `"https://www.bing.com/search?q={query}"`
+
+---
 
 ### `autoactions`
 
