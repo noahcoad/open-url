@@ -14,6 +14,7 @@ Package Control: https://packagecontrol.io/packages/Open%20URL
 | Open URL | `ctrl+u` | Open URL, file, folder, or Google search under cursor |
 | Select URL | `ctrl+shift+u` | Expand cursor to URL/path and copy to clipboard |
 | Copy Deep Link | `ctrl+alt+u` | Copy current file path with an in-file location anchor |
+| Copy Transformed Path | — | Copy file path run through `copy_path_transform` (visible only when setting is configured) |
 | Paste Relative Path | `ctrl+alt+v` | Paste clipboard path made relative to the current file |
 
 
@@ -68,6 +69,14 @@ An optional command to transform the file path before the `::location` is append
 
 `{path}` is replaced with the file path. The command's stdout becomes the new path.
 
+
+### Copy Transformed Path
+
+Copies the current file path after running it through `copy_path_transform` — the same transform used by Copy Deep Link, but without any `::location` suffix. Useful as an alternative to the built-in "File: Copy Path" when you want the normalized/shortened form.
+
+This command only appears in menus and the command palette when `copy_path_transform` is configured in your User settings.
+
+---
 
 ### Paste Relative Path (`ctrl+alt+v`)
 
