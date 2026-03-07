@@ -4,10 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Sublime Text plugin ("Open URL") that intelligently opens URLs, file paths, folders, or performs Google searches based on selected/cursor text. It is a single-file Python plugin with no build system or external dependencies.
+This is a Sublime Text 4 plugin ("Open URL") that intelligently opens URLs, file paths, folders, or performs Google searches based on selected/cursor text. It is a single-file Python plugin with no build system or external dependencies.
+
+**Runtime:** Sublime Text 4 embeds **Python 3.8**. Use Python 3.8 APIs freely (e.g. `subprocess.run`, f-strings, `typing`, walrus operator, etc.).
 
 - GitHub: https://github.com/noahcoad/open-url
 - Package Control: https://packagecontrol.io/packages/Open%20URL
+
+## Reference Docs
+
+Read ../../readme.md for context on where to find API docs and bring those into context.
 
 ## Installation & Development
 
