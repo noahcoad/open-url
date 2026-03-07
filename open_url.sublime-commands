@@ -8,8 +8,8 @@
 		"command": "select_url"
 	},
 	{
-		"caption": "Copy Path with Location",
-		"command": "copy_file_path_with_location"
+		"caption": "Copy Deep Link",
+		"command": "copy_deep_link"
 	},
 	{
 		"caption": "Paste Relative Path",

@@ -13,7 +13,7 @@
 // action=run,edit,menu
 // menu exists so that if the user does choose run, you can specify how to run the selected file
 {
-	// Optional command to transform the file path before it is used in "Copy Path with Location".
+	// Optional command to transform the file path before it is used in "Copy Deep Link".
 	// {path} is replaced with the file path. stdout of the command becomes the new path.
 	// Example: "/opt/homebrew/bin/python3.12 clipfix.py --input text --output stdout --quiet {path}"
 	"copy_path_transform": "",

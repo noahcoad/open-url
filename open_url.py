@@ -11,7 +11,7 @@ class SelectUrlCommand(sublime_plugin.TextCommand):
 		self.view.sel().add(region)
 		sublime.set_clipboard(self.view.substr(region).strip())
 
-class CopyFilePathWithLocationCommand(sublime_plugin.TextCommand):
+class CopyDeepLinkCommand(sublime_plugin.TextCommand):
 	def run(self, edit=None):
 		file_path = self.view.file_name()
 		if not file_path:

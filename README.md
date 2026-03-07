@@ -14,7 +14,7 @@ Use `::` to link to a specific location within a file. Place the cursor on the l
 | `notes.txt::/^## Usage/` | Open file, jump to first line matching regex `^## Usage` |
 | `"my notes.txt"::42` | Quoted filename (spaces allowed) at line 42 |
 
-### Copy Path with Location
+### Copy Deep Link
 
 `ctrl+alt+u` copies the current file path with a location anchor to the clipboard.
 
