@@ -23,7 +23,7 @@ class CopyFilePathWithLocationCommand(sublime_plugin.TextCommand):
 			sublime.status_message("Current line is empty")
 			return
 		words = line_text.split()[:5]
-		escaped = re.escape(' '.join(words))
+		escaped = re.sub(r'([.^$*+?{}[\]\\|()])', r'\\\1', ' '.join(words))
 		link = "%s::/^%s/" % (file_path, escaped)
 		sublime.set_clipboard(link)
 		sublime.status_message("Copied: %s" % link)
@@ -169,10 +169,27 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 					start -= 1
 
 				# move end of selection forward to the end of the url
-				while (end < view_size
-						and (not self.view.substr(end) in terminator
-							or (end >= 1 and self.view.substr(end - 1) == '\\'))
-						and self.view.classify(end) & sublime.CLASS_LINE_END == 0):
+				# once past a :: separator, spaces inside /regex/ or "string" are not terminators
+				loc_delim = None
+				passed_sep = False
+				while end < view_size:
+					if self.view.classify(end) & sublime.CLASS_LINE_END != 0:
+						break
+					c = self.view.substr(end)
+					if loc_delim:
+						if c == loc_delim:
+							end += 1
+							break
+						end += 1
+						continue
+					if not passed_sep and c == ':' and end + 1 < view_size and self.view.substr(end + 1) == ':':
+						passed_sep = True
+						end += 2
+						if end < view_size and self.view.substr(end) in ('/', '"'):
+							loc_delim = self.view.substr(end)
+						continue
+					if c in terminator and not (end >= 1 and self.view.substr(end - 1) == '\\'):
+						break
 					end += 1
 
 		# grab the URL
