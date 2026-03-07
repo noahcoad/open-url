@@ -17,14 +17,20 @@ class CopyFilePathWithLocationCommand(sublime_plugin.TextCommand):
 		if not file_path:
 			sublime.status_message("File has no path")
 			return
-		cursor = self.view.sel()[0].begin()
-		line_text = self.view.substr(self.view.line(cursor)).strip()
-		if not line_text:
-			sublime.status_message("Current line is empty")
-			return
-		words = line_text.split()[:5]
-		escaped = re.sub(r'([.^$*+?{}[\]\\|()])', r'\\\1', ' '.join(words))
-		link = "%s::/^%s/" % (file_path, escaped)
+		sel = self.view.sel()[0]
+		if not sel.empty():
+			loc_text = self.view.substr(sel)
+			escaped = re.sub(r'([.^$*+?{}[\]\\|()])', r'\\\1', loc_text)
+			link = "%s::/^%s/" % (file_path, escaped)
+		else:
+			cursor = sel.begin()
+			line_text = self.view.substr(self.view.line(cursor)).strip()
+			if not line_text:
+				sublime.status_message("Current line is empty")
+				return
+			words = line_text.split()[:5]
+			escaped = re.sub(r'([.^$*+?{}[\]\\|()])', r'\\\1', ' '.join(words))
+			link = "%s::/^%s/" % (file_path, escaped)
 		sublime.set_clipboard(link)
 		sublime.status_message("Copied: %s" % link)
 
