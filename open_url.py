@@ -20,8 +20,7 @@ class CopyFilePathWithLocationCommand(sublime_plugin.TextCommand):
 		sel = self.view.sel()[0]
 		if not sel.empty():
 			loc_text = self.view.substr(sel)
-			escaped = re.sub(r'([.^$*+?{}[\]\\|()])', r'\\\1', loc_text)
-			link = "%s::/^%s/" % (file_path, escaped)
+			link = '%s::"%s"' % (file_path, loc_text)
 		else:
 			cursor = sel.begin()
 			line_text = self.view.substr(self.view.line(cursor)).strip()
