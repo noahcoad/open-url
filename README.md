@@ -76,7 +76,6 @@ Copies the current file path after running it through `copy_path_transform` — 
 
 This command only appears in menus and the command palette when `copy_path_transform` is configured in your User settings.
 
----
 
 ### Paste Relative Path (`ctrl+alt+v`)
 
@@ -115,7 +114,6 @@ Other examples:
 - `"https://duckduckgo.com/?q={query}"`
 - `"https://www.bing.com/search?q={query}"`
 
----
 
 ### `autoactions`
 

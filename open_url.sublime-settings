@@ -22,6 +22,10 @@
 	// Example: "/opt/homebrew/bin/python3.12 clipfix.py --input text --output stdout --quiet {path}"
 	"copy_path_transform": "",
 
+	// When pasting a relative path into a Markdown file, automatically wrap the
+	// entire pasted string in backticks. Set to false to disable.
+	"paste_relative_path_markdown_backticks": true,
+
 	"autoactions": [
 		{ "os": "win", "endswith": [".exe", ".com"], "action": "run" },
 		{ "os": "win", "endswith": [".bat", ".cmd"], "action": "menu", "terminal": true, "pause": true },

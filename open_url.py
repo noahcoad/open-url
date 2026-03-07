@@ -135,6 +135,13 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 			rel_path = abs_path
 
 		result = min(rel_path, tilde_path, key=len) + loc_suffix
+
+		config = sublime.load_settings("open_url.sublime-settings")
+		if config.get("paste_relative_path_markdown_backticks", True):
+			syntax = self.view.settings().get("syntax", "")
+			if "markdown" in syntax.lower():
+				result = "`" + result + "`"
+
 		regions = list(self.view.sel())
 		self.view.sel().clear()
 		offset = 0
