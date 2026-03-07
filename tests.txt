@@ -1,0 +1,26 @@
+C:\Temp\tmp.txt  example.py
+../Default/Preferences.sublime-settings
+c:\Program Files\Internet Explorer
+C:\Noah\Projects\people\ChrisFritchie\ChrisFritchie.sublime-project
+~/tmp
+/etc
+~/
+../../../../../txt/md/journal.md::/^# 2026-03-05/
+../../../../../txt/md/journal.md::/^# 2026-03-05/
+~/txt/md/journal.md::/^# 2026-03-05/
+../../../../../txt/md/journal.md::/^# 2026-03-05/
+/Users/ncoad/txt/md/journal.md
+../../../../../txt/md/journal.md
+~/txt/md/journal.md
+~/txt/md/journal.md
+../../readme.md
+/Users/ncoad/Library/CloudStorage/Dropbox/code/prj/sublime/readme.md
+../../readme.md
+~/code/prj/sublime/active/open-url/example.txt
+~/code/prj/sublime/active/open-url/example.txt
+example.txt
+~/code/prj/sublime/active/open-url/example.txt~/code/prj/sublime/active/open-url/example.txt
+example.txt
+~/code/prj/sublime/active/open-url/tests.txt
+tests.txt
+tests.txt::/^tests\.txt/

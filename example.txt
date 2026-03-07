@@ -7,22 +7,3 @@ the hit ctrl+u to open, or right-click for context menu, or alt+double-click
 helloworld.com
 http://www.google.com/reader/view/
 google.com/reader/view/
-C:\Temp\tmp.txt  example.py
-../Default/Preferences.sublime-settings
-c:\Program Files\Internet Explorer
-C:\Noah\Projects\people\ChrisFritchie\ChrisFritchie.sublime-project
-~/tmp
-/etc
-~/
-../../../../../txt/md/journal.md::/^# 2026-03-05/
-../../../../../txt/md/journal.md::/^# 2026-03-05/
-~/txt/md/journal.md::/^# 2026-03-05/
-../../../../../txt/md/journal.md::/^# 2026-03-05/
-/Users/ncoad/txt/md/journal.md
-../../../../../txt/md/journal.md
-~/txt/md/journal.md
-~/txt/md/journal.md
-
-../../readme.md
-/Users/ncoad/Library/CloudStorage/Dropbox/code/prj/sublime/readme.md
-../../readme.md
