@@ -17,6 +17,16 @@ class CopyFilePathWithLocationCommand(sublime_plugin.TextCommand):
 		if not file_path:
 			sublime.status_message("File has no path")
 			return
+		config = sublime.load_settings("open_url.sublime-settings")
+		transform = config.get("copy_path_transform", "")
+		if transform:
+			cmd = transform.replace("{path}", file_path)
+			try:
+				file_path = subprocess.check_output(cmd, shell=True).decode("utf-8").strip()
+			except subprocess.CalledProcessError as e:
+				sublime.status_message("copy_path_transform failed: %s" % e)
+				return
+
 		sel = self.view.sel()[0]
 		if not sel.empty():
 			loc_text = self.view.substr(sel)
