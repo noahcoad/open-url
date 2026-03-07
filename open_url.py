@@ -80,7 +80,7 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 				(path_part.startswith("'") and path_part.endswith("'")):
 			path_part = path_part[1:-1]
 
-		abs_path = os.path.expanduser(os.path.expandvars(path_part))
+		expanded_path = os.path.expanduser(os.path.expandvars(path_part))
 
 		current_file = self.view.file_name()
 		if not current_file:
@@ -88,18 +88,20 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 				self.view.replace(edit, region, raw)
 			return
 
+		# tilde_path: computed before realpath so ~/... symlinks stay short
+		home = os.path.expanduser("~")
+		if expanded_path.startswith(home + os.sep):
+			tilde_path = "~" + expanded_path[len(home):]
+		else:
+			tilde_path = expanded_path
+
+		# rel_path: resolve symlinks on both sides so paths sharing a symlink compare correctly
 		current_dir = os.path.realpath(os.path.dirname(current_file))
-		abs_path = os.path.realpath(abs_path)
+		abs_path = os.path.realpath(expanded_path)
 		try:
 			rel_path = os.path.relpath(abs_path, current_dir)
 		except ValueError:
 			rel_path = abs_path
-
-		home = os.path.expanduser("~")
-		if abs_path.startswith(home + os.sep):
-			tilde_path = "~" + abs_path[len(home):]
-		else:
-			tilde_path = abs_path
 
 		result = min(rel_path, tilde_path, key=len) + loc_suffix
 		for region in self.view.sel():
