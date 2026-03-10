@@ -64,14 +64,18 @@ class CopyDeepLinkCommand(sublime_plugin.TextCommand):
 				link = '%s:"%s"' % (file_path, loc_text)
 		else:
 			cursor = sel.begin()
-			line_text = self.view.substr(self.view.line(cursor)).strip()
+			line_raw = self.view.substr(self.view.line(cursor))
+			line_text = line_raw.strip()
 			if not line_text or line_only:
 				line_num = self.view.rowcol(cursor)[0] + 1
 				link = "%s:%d" % (file_path, line_num)
 			else:
+				has_leading = line_raw != line_raw.lstrip()
 				words = line_text.split()[:5]
-				escaped = re.sub(r'([.^$*+?{}[\]\\|()])', r'\\\1', ' '.join(words))
-				link = "%s:/^%s/" % (file_path, escaped)
+				escaped_words = [re.sub(r'([.^$*+?{}[\]\\|()/])', r'\\\1', w) for w in words]
+				escaped = r'\s+'.join(escaped_words)
+				prefix = r"^\s*" if has_leading else "^"
+				link = "%s:/%s%s/" % (file_path, prefix, escaped)
 		sublime.set_clipboard(link)
 		sublime.status_message("Copied: %s" % link)
 
@@ -157,13 +161,26 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 		except ValueError:
 			rel_path = abs_path
 
-		result = min(rel_path, tilde_path, key=len) + loc_suffix
+		# if the first common ancestor is only the home folder, don't relativize
+		try:
+			home_real = os.path.realpath(home)
+			common_ancestor = os.path.commonpath([current_dir, abs_path])
+			if common_ancestor == home_real:
+				result = tilde_path + loc_suffix
+			else:
+				result = min(rel_path, tilde_path, key=len) + loc_suffix
+		except ValueError:
+			result = min(rel_path, tilde_path, key=len) + loc_suffix
 
 		config = sublime.load_settings("open_url.sublime-settings")
+		is_markdown = False
 		if config.get("paste_relative_path_markdown_backticks", True):
 			syntax = self.view.settings().get("syntax", "")
 			if "markdown" in syntax.lower():
+				is_markdown = True
 				result = "`" + result + "`"
+		if not is_markdown and " " in result:
+			result = '"' + result + '"'
 
 		regions = list(self.view.sel())
 		self.view.sel().clear()
@@ -333,7 +350,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 						break
 					c = self.view.substr(end)
 					if loc_delim:
-						if c == loc_delim:
+						if c == loc_delim and not (end >= 1 and self.view.substr(end - 1) == '\\'):
 							end += 1
 							break
 						end += 1

@@ -1,6 +1,7 @@
 [
 	{ "keys": ["ctrl+u"], "command": "open_url" },
 	{ "keys": ["ctrl+shift+u"], "command": "select_url" },
-	{ "keys": ["ctrl+alt+u"], "command": "copy_deep_link" },
+	{ "keys": ["ctrl+alt+shift+u"], "command": "copy_deep_link" },
 	{ "keys": ["ctrl+alt+v"], "command": "paste_relative_path" },
+	{ "keys": ["ctrl+alt+u"], "command": "copy_transformed_path" },
 ]
