@@ -209,6 +209,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# sublime text has its own open_url command used for things like Help menu > Documentation
 		# so if a url is specified, then open it instead of getting text from the edit window
 		if url is None:
+			sels = list(self.view.sel())
+			# multi-cursor or multi-line selection: open each line separately
+			if len(sels) > 1 or (len(sels) == 1 and not sels[0].empty() and
+					len([l for l in self.view.substr(sels[0]).splitlines() if l.strip()]) > 1):
+				for region in sels:
+					line_url = self.view.substr(self.find_selection(region)).strip()
+					if line_url:
+						self.run(edit=edit, url=line_url)
+				return
 			url = self.selection()
 
 		# expand variables in the path
@@ -282,8 +291,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		# re.sub(r'\%(\w+)\%', r'${\1}',
 
 	# pulls the current selection or url under the cursor
-	def find_selection(self):
-		s = self.view.sel()[0]
+	def find_selection(self, region=None):
+		s = region if region is not None else self.view.sel()[0]
 
 		# expand selection to possible URL
 		start = s.a

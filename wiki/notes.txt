@@ -20,6 +20,7 @@ known domain extensions from: http://data.iana.org/TLD/tlds-alpha-by-domain.txt
 2026-03-07  add 'Paste Relative Path' to paste a file path relative to the file it's being pasted into
 2026-03-07  add 'browser_search' setting for user to define search
 2026-03-07  add 'Copy Transformed Path' command to use 'copy_path_transform' setting to support transforming the path copied to the clipboard for the current file
+2026-03-09  add support for multi-line
 
 code snippets for debugging
 	s = sublime.load_settings("open_url.sublime-settings")
