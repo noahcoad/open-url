@@ -416,7 +416,10 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             return
 
         opts = [*[opener.get("label") for opener in openers], "search..."]
-        sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, openers, folder, raw_folder))
+        sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, openers, folder, raw_folder),
+            sublime.QuickPanelFlags.NONE, -1, None, #selected_index on_highlight
+            f"📁 {raw_folder}"
+        )
 
     def folder_done(self, idx: int, openers: list[dict], folder: str, raw_folder: str):
         if idx < 0:
@@ -442,6 +445,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         sublime.active_window().show_quick_panel(
             ["edit", *[opener.get("label") for opener in openers], "search..."],
             lambda idx: self.file_done(idx, openers, path, raw_path),
+            sublime.QuickPanelFlags.NONE, -1, None, #selected_index on_highlight
+            f"␜ {raw_path}"
         )
 
     def file_done(self, idx: int, openers: list[dict], path: str, raw_path: str):
