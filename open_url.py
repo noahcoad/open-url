@@ -18,6 +18,7 @@ Settings = TypedDict(
     {
         "delimiters": str,
         "delimiters_scoped": list,
+        "scope_stop": list,
         "trailing_delimiters": str,
         "web_browser": str,
         "web_browser_path": list,
@@ -40,6 +41,7 @@ Settings = TypedDict(
 settings_keys = [
     "delimiters",
     "delimiters_scoped",
+    "scope_stop",
     "trailing_delimiters",
     "web_browser",
     "web_browser_path",
@@ -218,6 +220,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         view_size: int = self.view.size()
         delimiters = list(self.config["delimiters"])
         scope_delim = list(self.config["delimiters_scoped"])
+        scope_stop = list(self.config["scope_stop"])
         txt_pt = region.a # use first point for scope matching
         txt_scope = view.scope_name(txt_pt) #e.g., "source.python meta.function…"
         match_max = 0
@@ -234,12 +237,22 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         while start > 0:
             if self.view.substr(start - 1) in delimiters:
                 break
+            if scope_stop:
+                txt_scope = view.scope_name(start - 1)
+                for scope_i in scope_stop:
+                    if scope_i in txt_scope:
+                        break
             start -= 1
 
         # move end of selection forward to the end of the url
         while end < view_size:
             if self.view.substr(end) in delimiters:
                 break
+            if scope_stop:
+                txt_scope = view.scope_name(end)
+                for scope_i in scope_stop:
+                    if scope_i in txt_scope:
+                        break
             end += 1
         sel = self.view.substr(sublime.Region(start, end))
         return sel.strip()

@@ -144,6 +144,8 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
       -   4 `text.html`
       -   6 `text.html.markdown`
       - 256 `meta.paragraph`
+- **scope_stop**
+  - A list of scopes to stop path expansion at, e.g., a valid path symbol `//` when it's scoped as a `punctuation.definition.comment`
 - **trailing_delimiters**
   - if any of these characters are seen at the end of a URL, they are recursively removed; for file and folder paths, URLs **with and without** trailing delimiters are tried; default is `;.:`
 - **web_browser**

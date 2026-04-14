@@ -8,6 +8,11 @@
     {"scope":"text.html.markdown", "min":2,  "delim":" \t\n\r\"'`,*<>[](){}"},
     //       scope_match_threshold:↑ min score to consider a comparison a match (0 no match; >0 match, higher is better, see ReadMe for examples)
   ],
+  "scope_stop": [ // stop expanding selection at these scopes
+    "punctuation.definition.comment",
+    "punctuation.definition.string.begin","punctuation.definition.string.end",
+    "punctuation.section.sequence.begin" ,"punctuation.section.sequence.end",
+  ],
 
   // if these delimiting characters are seen at the end of the URL, they are removed, e.g. sublimetext.com.; becomes sublimetext.com
   "trailing_delimiters": ";.:",
