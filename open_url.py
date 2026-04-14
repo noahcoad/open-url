@@ -17,6 +17,7 @@ Settings = TypedDict(
     "Settings",
     {
         "delimiters": str,
+        "delimiters_scoped": list,
         "trailing_delimiters": str,
         "web_browser": str,
         "web_browser_path": list,
@@ -38,6 +39,7 @@ Settings = TypedDict(
 # these are necessary to convert settings object to a dict, which can then be merged with project settings
 settings_keys = [
     "delimiters",
+    "delimiters_scoped",
     "trailing_delimiters",
     "web_browser",
     "web_browser_path",
@@ -204,6 +206,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         """Returns selection. If selection contains no characters, expands it
         until hitting delimiter chars.
         """
+        view = self.view
         start: int = region.begin()
         end: int = region.end()
 
@@ -214,6 +217,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         # nothing is selected, so expand selection to nearest delimiters
         view_size: int = self.view.size()
         delimiters = list(self.config["delimiters"])
+        scope_delim = list(self.config["delimiters_scoped"])
+        txt_pt = region.a # use first point for scope matching
+        txt_scope = view.scope_name(txt_pt) #e.g., "source.python meta.function…"
+        for scope_i in scope_delim:
+            scope     = scope_i['scope']
+            match_min = scope_i['min'  ]
+            delim     = scope_i['delim']
+            if (score := sublime.score_selector(txt_scope, scope)) >= match_min:
+                delimiters = delim
+                break
 
         # move the selection back to the start of the url
         while start > 0:

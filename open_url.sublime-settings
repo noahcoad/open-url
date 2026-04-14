@@ -4,6 +4,11 @@
   // delimiters for expanding selection, these are markdown friendly
   "delimiters": " \t\n\r\"'`,*<>[](){}",
 
+  "delimiters_scoped":[ // same as delimiters, but for a specific scope, uses Sublime's score_selector API to test whether a given key matches the scope of the current selection (https://www.sublimetext.com/docs/api_reference.html#sublime.score_selector)
+    {"scope":"text.html.markdown", "min":2,  "delim":" \t\n\r\"'`,*<>[](){}"},
+    //       scope_match_threshold:↑ min score to consider a comparison a match (0 no match; >0 match, higher is better, see ReadMe for examples)
+  ],
+
   // if these delimiting characters are seen at the end of the URL, they are removed, e.g. sublimetext.com.; becomes sublimetext.com
   "trailing_delimiters": ";.:",
 
