@@ -20,6 +20,9 @@
   // example: chrome, linux
   // "web_browser_path": "/usr/bin/google-chrome %s"
 
+  // Enable fallback to web searches
+  "enable_web_search": true,
+
   // if URL is neither a local file nor a web URL, pass it to a web searcher
   "web_searchers": [
     {
@@ -29,6 +32,8 @@
     }
   ],
 
+  "live_edit": true, //if selection is not recognized as a file/folder/url, show a panel to edit it
+
   // path transforms
   "aliases": {},
 
@@ -37,6 +42,9 @@
   "file_prefixes": [],
 
   "file_suffixes": [".js"],
+
+  // Enable file path handling
+  "enable_file_commands": true,
 
   // pass file that matches regex "pattern" to shell commands
   "file_custom_commands": [
@@ -62,6 +70,9 @@
     { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
     { "label": "open with default application", "os": "linux", "commands": [] }
   ],
+
+  // Enable folder path handling
+  "enable_folder_commands": true,
 
   // pass folder that matches regex "pattern" to shell commands
   "folder_custom_commands": [

@@ -145,9 +145,13 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   - the path to your web browser executable for opening web URLs
   - this setting overrides the default web browser and the **web_browser** setting
   - [read the top answer here](https://stackoverflow.com/questions/22445217/python-webbrowser-open-to-open-chrome-browser), or look in settings for examples
+- **enable_web_search**
+  - if selection is not recognized as a file/folder/URL, pass it to web searches
 - **web_searchers**
   - if your selection isn't a file, a folder, or a URL, you can choose to pass it to a web searcher, which is just a URL that searches for the selected text
   - example: `{ "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" }`
+- **live_edit**
+  - if selection is not recognized as a file/folder/url, show a panel to edit it
 - **aliases**
   - first transform applied to URL, a dict with keys and values; replace each **key** in URL with corresponding **value**
   - example: `{ "{{BASE_PATH}}": "src/base" }`
@@ -160,9 +164,13 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
 - **file_suffixes**
   - path transform; adds these suffixes to filename only
   - example: `[".js", ".ts", ".tsx"]`
+- **enable_file_commands**
+  - allows disabling file path handling, e.g., if you only want to open web links
 - **file_custom_commands**
   - pass a file to shell commands whose pattern matches the file path
   - example, for copying the file path to the clipboard: `{ "label": "copy path", "commands": "printf '$url' | pbcopy" }`
+- **enable_folder_commands**
+  - allows disabling folder path handling, e.g., if you only want to open web links
 - **folder_custom_commands**
   - pass a folder to shell commands whose pattern matches the folder path
   - example, for opening the folder in iTerm: `{ "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] }`
