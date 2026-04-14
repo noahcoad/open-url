@@ -136,8 +136,8 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   - characters at which auto-expansion of selected path stops, e.g. `` \t\n\r\"'`,*<>[](){}``
   - the default settings are Markdown friendly
 - **delimiters_scoped**
-  - Same as delimiters, but for a specific scope, uses Sublime's [score_selector API](https://www.sublimetext.com/docs/api_reference.html#sublime.score_selector) to test whether a given key matches the scope of the current selection
-  - A list of [`scope_match_threshold`, `delimiters`]
+  - Same as delimiters, but for a specific scope, uses Sublime's [score_selector API](https://www.sublimetext.com/docs/api_reference.html#sublime.score_selector) to test whether a given key matches the scope of the current selection. The scope with the maximum match score wins.
+  - A list of `scope`/`scope_match_threshold`/`delimiters` dictionaries.
     - **scope_match_threshold** Minimum score to consider a comparison a match (0 no match; >0 match, higher is better), e.g., for `text.html.markdown markup.list.unnumbered.markdown meta.paragraph.list.markdown`
       -   0 `paragraph`
       -   2 `text` `text.`

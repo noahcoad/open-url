@@ -220,13 +220,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         scope_delim = list(self.config["delimiters_scoped"])
         txt_pt = region.a # use first point for scope matching
         txt_scope = view.scope_name(txt_pt) #e.g., "source.python meta.function…"
+        match_max = 0
         for scope_i in scope_delim:
             scope     = scope_i['scope']
             match_min = scope_i['min'  ]
             delim     = scope_i['delim']
             if (score := sublime.score_selector(txt_scope, scope)) >= match_min:
-                delimiters = delim
-                break
+                if score > match_max:
+                    delimiters = delim
+                    match_max = score
 
         # move the selection back to the start of the url
         while start > 0:
