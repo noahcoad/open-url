@@ -239,9 +239,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                 break
             if scope_stop:
                 txt_scope = view.scope_name(start - 1)
+                is_found = False
                 for scope_i in scope_stop:
                     if scope_i in txt_scope:
+                        is_found = True
                         break
+                if is_found:
+                    break
             start -= 1
 
         # move end of selection forward to the end of the url
@@ -250,9 +254,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                 break
             if scope_stop:
                 txt_scope = view.scope_name(end)
+                is_found = False
                 for scope_i in scope_stop:
                     if scope_i in txt_scope:
+                        is_found = True
                         break
+                if is_found:
+                    break
             end += 1
         sel = self.view.substr(sublime.Region(start, end))
         return sel.strip()
