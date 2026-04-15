@@ -4,6 +4,11 @@
   // delimiters for expanding selection, these are markdown friendly
   "delimiters": " \t\n\r\"'`,*<>[](){}",
 
+  "delimiters_scoped":[ // same as delimiters, but for a specific scope, uses Sublime's score_selector API to test whether a given key matches the scope of the current selection (https://www.sublimetext.com/docs/api_reference.html#sublime.score_selector)
+    {"scope":"text.html.markdown", "min":2,  "delim":" \t\n\r\"'`,*<>[](){}"},
+    //       scope_match_threshold:↑ min score to consider a comparison a match (0 no match; >0 match, higher is better, see ReadMe for examples)
+  ],
+
   // if these delimiting characters are seen at the end of the URL, they are removed, e.g. sublimetext.com.; becomes sublimetext.com
   "trailing_delimiters": ";.:",
 
@@ -20,6 +25,9 @@
   // example: chrome, linux
   // "web_browser_path": "/usr/bin/google-chrome %s"
 
+  // Enable fallback to web searches
+  "enable_web_search": true,
+
   // if URL is neither a local file nor a web URL, pass it to a web searcher
   "web_searchers": [
     {
@@ -29,6 +37,8 @@
     }
   ],
 
+  "live_edit": true, //if selection is not recognized as a file/folder/url, show a panel to edit it
+
   // path transforms
   "aliases": {},
 
@@ -37,6 +47,9 @@
   "file_prefixes": [],
 
   "file_suffixes": [".js"],
+
+  // Enable file path handling
+  "enable_file_commands": true,
 
   // pass file that matches regex "pattern" to shell commands
   "file_custom_commands": [
@@ -62,6 +75,9 @@
     { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
     { "label": "open with default application", "os": "linux", "commands": [] }
   ],
+
+  // Enable folder path handling
+  "enable_folder_commands": true,
 
   // pass folder that matches regex "pattern" to shell commands
   "folder_custom_commands": [
