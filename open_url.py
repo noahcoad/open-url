@@ -17,15 +17,21 @@ Settings = TypedDict(
     "Settings",
     {
         "delimiters": str,
+        "delimiters_scoped": list,
+        "scope_stop": list,
         "trailing_delimiters": str,
         "web_browser": str,
         "web_browser_path": list,
+        "enable_web_search": bool,
         "web_searchers": list,
+        "live_edit": list,
         "file_prefixes": list,
         "file_suffixes": list,
         "search_paths": list,
         "aliases": dict,
+        "enable_file_commands": bool,
         "file_custom_commands": list,
+        "enable_folder_commands": bool,
         "folder_custom_commands": list,
         "other_custom_commands": list,
     },
@@ -34,15 +40,21 @@ Settings = TypedDict(
 # these are necessary to convert settings object to a dict, which can then be merged with project settings
 settings_keys = [
     "delimiters",
+    "delimiters_scoped",
+    "scope_stop",
     "trailing_delimiters",
     "web_browser",
     "web_browser_path",
+    "enable_web_search",
     "web_searchers",
+    "live_edit",
     "file_prefixes",
     "file_suffixes",
     "search_paths",
     "aliases",
+    "enable_file_commands",
     "file_custom_commands",
+    "enable_folder_commands",
     "folder_custom_commands",
     "other_custom_commands",
 ]
@@ -196,6 +208,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         """Returns selection. If selection contains no characters, expands it
         until hitting delimiter chars.
         """
+        view = self.view
         start: int = region.begin()
         end: int = region.end()
 
@@ -206,17 +219,48 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         # nothing is selected, so expand selection to nearest delimiters
         view_size: int = self.view.size()
         delimiters = list(self.config["delimiters"])
+        scope_delim = list(self.config["delimiters_scoped"])
+        scope_stop = list(self.config["scope_stop"])
+        txt_pt = region.a # use first point for scope matching
+        txt_scope = view.scope_name(txt_pt) #e.g., "source.python meta.function…"
+        match_max = 0
+        for scope_i in scope_delim:
+            scope     = scope_i['scope']
+            match_min = scope_i['min'  ]
+            delim     = scope_i['delim']
+            if (score := sublime.score_selector(txt_scope, scope)) >= match_min:
+                if score > match_max:
+                    delimiters = delim
+                    match_max = score
 
         # move the selection back to the start of the url
         while start > 0:
             if self.view.substr(start - 1) in delimiters:
                 break
+            if scope_stop:
+                txt_scope = view.scope_name(start - 1)
+                is_found = False
+                for scope_i in scope_stop:
+                    if scope_i in txt_scope:
+                        is_found = True
+                        break
+                if is_found:
+                    break
             start -= 1
 
         # move end of selection forward to the end of the url
         while end < view_size:
             if self.view.substr(end) in delimiters:
                 break
+            if scope_stop:
+                txt_scope = view.scope_name(end)
+                is_found = False
+                for scope_i in scope_stop:
+                    if scope_i in txt_scope:
+                        is_found = True
+                        break
+                if is_found:
+                    break
             end += 1
         sel = self.view.substr(sublime.Region(start, end))
         return sel.strip()
@@ -311,10 +355,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         """Not a URL and not a local path; prompts user to modify path and looks
         for it again, or searches for this term using a web searcher.
         """
-        searchers = self.config["web_searchers"]
-        opts = [f"modify path {term}"]
-        opts += [f'{s["label"]} ({term})' for s in searchers]
-        sublime.active_window().show_quick_panel(opts, lambda idx: self.modify_or_search_done(idx, searchers, term))
+        is_edit = self.config["live_edit"]
+        is_web = self.config["enable_web_search"]
+        if not is_edit and not is_web:
+            return
+
+        opts, searchers = [], []
+        if is_edit:
+            opts += [f"modify path {term}"]
+        if is_web:
+            searchers = self.config["web_searchers"]
+            opts += [f'{s["label"]} ({term})' for s in searchers]
+        if opts:
+            sublime.active_window().show_quick_panel(opts, lambda idx: self.modify_or_search_done(idx, searchers, term))
 
     def modify_or_search_done(self, idx: int, searchers, term: str):
         if idx < 0:
@@ -354,6 +407,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
     def folder_action(self, folder: str, show_menu: bool, raw_folder: str):
         """Choose from folder actions."""
+        if not self.config["enable_folder_commands"]:
+            return
         openers = match_openers(self.config["folder_custom_commands"], folder)
 
         if openers and not show_menu:
@@ -376,6 +431,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
     def file_action(self, path: str, show_menu: bool, raw_path: str) -> None:
         """Edit file or choose from file actions."""
+        if not self.config["enable_file_commands"]:
+            return
         openers = match_openers(self.config["file_custom_commands"], path)
 
         if not show_menu:
