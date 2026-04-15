@@ -36,7 +36,7 @@
 
   "file_prefixes": [],
 
-  "file_suffixes": [".js"],
+  "file_suffixes": [], //in some cases ".js" can add seconds of delay to opening an URL with incomplete cutoffs like //example.com
 
   // pass file that matches regex "pattern" to shell commands
   "file_custom_commands": [

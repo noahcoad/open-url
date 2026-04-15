@@ -109,7 +109,7 @@ Here are the settings with their default values:
 - `aliases`: `{}`
 - `search_paths`: `["src"]`
 - `file_prefixes`: `[]`
-- `file_suffixes`: `[".js"]`
+- `file_suffixes`: `[]`
 
 The `aliases` dict is the first transform applied to the selected URL / path. It replaces each **key** in URL with the corresponding **value**.
 
