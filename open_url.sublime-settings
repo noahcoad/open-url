@@ -13,6 +13,9 @@
     "punctuation.definition.string.begin","punctuation.definition.string.end",
     "punctuation.section.sequence.begin" ,"punctuation.section.sequence.end",
   ],
+  "scope_url": [ // find URLs based on scope instead of chars: [handle⎀this](example.com) for markdown without having to click on example.com
+    {"file":"text.html.markdown", "txt":"meta.link.inline", "url":"markup.underline.link"},
+  ],
 
   // if these delimiting characters are seen at the end of the URL, they are removed, e.g. sublimetext.com.; becomes sublimetext.com
   "trailing_delimiters": ";.:",

@@ -19,6 +19,7 @@ Settings = TypedDict(
         "delimiters": str,
         "delimiters_scoped": list,
         "scope_stop": list,
+        "scope_url": list,
         "trailing_delimiters": str,
         "web_browser": str,
         "web_browser_path": list,
@@ -42,6 +43,7 @@ settings_keys = [
     "delimiters",
     "delimiters_scoped",
     "scope_stop",
+    "scope_url",
     "trailing_delimiters",
     "web_browser",
     "web_browser_path",
@@ -217,12 +219,31 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             return sel.strip()
 
         # nothing is selected, so expand selection to nearest delimiters
+        pt = region.begin() # use first point for scope matching, though no selection here, so irrelevant
+        txt_scope = view.scope_name(pt)
+        scope_url = list(self.config["scope_url"])
+        for scope_url_i in scope_url:
+            url_reg = None
+            if view.match_selector(pt, scope_url_i['file']): #↓ TODO: use match_selector instead of scores?
+                txt_scope_i = scope_url_i['txt']; min_txt = scope_url_i.get('txt_scope_match_threshold',  4);
+                url_scope_i = scope_url_i['url']; min_url = scope_url_i.get('url_scope_match_threshold',100);
+                if   (score := sublime.score_selector(txt_scope, url_scope_i)) >= min_url: #@URL proper
+                    url_reg             = view.expand_to_scope(pt  , url_scope_i)
+                elif (score := sublime.score_selector(txt_scope, txt_scope_i)) >= min_txt: #@URL container
+                    if (reg_scoped     := view.expand_to_scope(pt  , txt_scope_i)): #txt, find URL inside
+                        for i in range(reg_scoped.size()):
+                            pt_i = reg_scoped.begin() + i
+                            if view.match_selector(pt_i, url_scope_i):
+                                url_reg = view.expand_to_scope(pt_i, url_scope_i)
+                                break
+            if url_reg: #found url inside
+                sel = self.view.substr(url_reg)
+                return sel.strip()
+
         view_size: int = self.view.size()
         delimiters = list(self.config["delimiters"])
         scope_delim = list(self.config["delimiters_scoped"])
         scope_stop = list(self.config["scope_stop"])
-        txt_pt = region.a # use first point for scope matching
-        txt_scope = view.scope_name(txt_pt) #e.g., "source.python meta.function…"
         match_max = 0
         for scope_i in scope_delim:
             scope     = scope_i['scope']

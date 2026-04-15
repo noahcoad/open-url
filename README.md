@@ -146,6 +146,12 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
       - 256 `meta.paragraph`
 - **scope_stop**
   - A list of scopes to stop path expansion at, e.g., a valid path symbol `//` when it's scoped as a `punctuation.definition.comment`
+- **scope_url**
+  - Find URLs based on scope instead of chars: `[handle⎀this](example.com)` for markdown without having to click on `example.com` in parenthesis. Searched first.
+  - `file` file scopes to check in, e.g., `text.html.markdown`
+  - `txt` text scope to test against, e.g., `meta.link.inline` contains both `[info]` and `(url)` in a mar
+  - `url` URL text scope extract, e.g., `markup.underline.link` matches (`url`)
+
 - **trailing_delimiters**
   - if any of these characters are seen at the end of a URL, they are recursively removed; for file and folder paths, URLs **with and without** trailing delimiters are tried; default is `;.:`
 - **web_browser**
