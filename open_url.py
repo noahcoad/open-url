@@ -86,6 +86,7 @@ def remove_trailing_delimiters(url: str, trailing_delimiters: str) -> str:
 def match_openers(openers: list[dict], url: str) -> list[dict]:
     ret: list[dict] = []
     platform = sublime.platform()
+    if openers is None: return ret
     for opener in openers:
         pattern: str | None = opener.get("pattern")
         o_s: str | None = opener.get("os")
