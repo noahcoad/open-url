@@ -13,6 +13,8 @@ import sublime_plugin  # type: ignore
 
 from .url import is_url
 
+_L = False #if _log.isEnabledFor(logging.KEY) else False
+
 Settings = TypedDict(
     "Settings",
     {
