@@ -169,6 +169,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         if len(urls) > 1:
             show_menu = False
         for url in urls:
+            if _L: print(f"url: {url}")
             self.handle(url, show_menu)
 
     def handle(self, url: str, show_menu: bool) -> None:
