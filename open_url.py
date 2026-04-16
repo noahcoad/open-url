@@ -32,6 +32,7 @@ Settings = TypedDict(
         "file_suffixes": list,
         "search_paths": list,
         "aliases": dict,
+        "on_click_ignore_sel": bool,
         "enable_file_commands": bool,
         "file_custom_commands": list,
         "enable_folder_commands": bool,
@@ -56,6 +57,7 @@ settings_keys = [
     "file_suffixes",
     "search_paths",
     "aliases",
+    "on_click_ignore_sel",
     "enable_file_commands",
     "file_custom_commands",
     "enable_folder_commands",
@@ -171,6 +173,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         for url in urls:
             if _L: print(f"url: {url}")
             self.handle(url, show_menu)
+
+
+        min_sel = self.config["on_click_ignore_sel"]
+        if min_sel > 0: # Find selection that includes the mouse clicked point
+            for reg in self.view.sel():
+                if reg.contains(pt_m) and reg.size() > min_sel:
+                    return self.get_selection(reg)
+        return self.get_selection(sublime.Region(pt_m, pt_m)) # no reg found or needed, use click Pt
 
     def handle(self, url: str, show_menu: bool) -> None:
         url = resolve_aliases(url, self.config["aliases"])

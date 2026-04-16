@@ -17,6 +17,9 @@
     {"file":"text.html.markdown", "txt":"meta.link.inline", "url":"markup.underline.link"},
   ],
 
+  // on mouse clicks ignore selection ≤ this value and use expansion/scope rules to determine the URL. Helps avoid errors when you click and slightly drag your mouse by ~1 char
+  "on_click_ignore_sel": 1,
+
   // if these delimiting characters are seen at the end of the URL, they are removed, e.g. sublimetext.com.; becomes sublimetext.com
   "trailing_delimiters": ";.:",
 

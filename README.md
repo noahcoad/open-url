@@ -151,7 +151,8 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   - `file` file scopes to check in, e.g., `text.html.markdown`
   - `txt` text scope to test against, e.g., `meta.link.inline` contains both `[info]` and `(url)` in a mar
   - `url` URL text scope extract, e.g., `markup.underline.link` matches (`url`)
-
+- **on_click_ignore_sel**
+  - on mouse clicks ignore selection ≤ this value and use expansion/scope rules to determine the URL. Helps avoid errors when you click and slightly drag your mouse by ≝1 char
 - **trailing_delimiters**
   - if any of these characters are seen at the end of a URL, they are recursively removed; for file and folder paths, URLs **with and without** trailing delimiters are tried; default is `;.:`
 - **web_browser**
