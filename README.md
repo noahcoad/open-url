@@ -19,6 +19,7 @@ Here's a bunch of ways you can run the command.
 - <kbd>ctrl+u</kbd> (OSX), <kbd>ctrl+alt+u</kbd> (Linux/Windows)
 - right-click > **Open URL**
 - <kbd>alt</kbd> + double-click
+- <kbd>alt</kbd> + right click (opens the link without moving your text cursor)
 - <kbd>shift+cmd+p</kbd>, then look for **Open URL**
 
 ### Give it a try
