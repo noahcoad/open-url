@@ -152,6 +152,8 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   - `file` file scopes to check in, e.g., `text.html.markdown`
   - `txt` text scope to test against, e.g., `meta.link.inline` contains both `[info]` and `(url)` in a mar
   - `url` URL text scope extract, e.g., `markup.underline.link` matches (`url`)
+- **scope_hash**
+  - A dictionary of `scope`s where a URL with the `prefix` should open the current file's position (e.g., `#section` in markdown). Currently only markdown with `#`prefix are supported
 - **on_click_ignore_sel**
   - on mouse clicks ignore selection ≤ this value and use expansion/scope rules to determine the URL. Helps avoid errors when you click and slightly drag your mouse by ≝1 char
 - **mouse_v_line_affordance**

@@ -16,6 +16,9 @@
   "scope_url": [ // find URLs based on scope instead of chars: [handle⎀this](example.com) for markdown without having to click on example.com
     {"file":"text.html.markdown", "txt":"meta.link.inline", "url":"markup.underline.link"},
   ],
+  "scope_hash": [ // scopes where a URL in the prefix should open the current file (e.g., `#section` in Markdown). Currently only markdown with #prefix are supported
+    {"scope":"text.html.markdown", "prefix":"#",},
+  ],
 
   // on clicks if your mouse cursor is positioned 4 "average-width" chars to the right from the end of the current line and at the bottom 0.33 of the current line's height, then you wanted to click on the line below to open the link there since there is nothing at this position at this line. Same for the line up
   "mouse_v_line_affordance": {"is":true, "width_chars":4, "height_line_fraction":0.33},

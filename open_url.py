@@ -22,6 +22,7 @@ Settings = TypedDict(
         "delimiters_scoped": list,
         "scope_stop": list,
         "scope_url": list,
+        "scope_hash": list,
         "trailing_delimiters": str,
         "web_browser": str,
         "web_browser_path": list,
@@ -48,6 +49,7 @@ settings_keys = [
     "delimiters_scoped",
     "scope_stop",
     "scope_url",
+    "scope_hash",
     "trailing_delimiters",
     "web_browser",
     "web_browser_path",
@@ -142,6 +144,31 @@ def merge_settings(window, keys: list[str]) -> Settings:
         return settings
     except Exception:
         return settings
+
+# Edited MarkdownEditing github.com/SublimeText-Markdown/MarkdownEditing/blob/master/LICENSE
+re_h = re.compile(r"""^([ \t]*) (?:
+    (\#{1,6})[ \t]+([^\n]+ )                     # ATX    hash       g2   heading g3
+    |      ([^-=#\s][^|\n]*)                     # SETEXT text       g4
+    \n \1 (-{3,}|={3,})                          # SETEXT underlines g5
+    )                  [ \t]*$"""           , re.X | re.M)
+def md_Hs(view, beg=0, end=None):
+    """Find markdown headers in url#header string or View text"""
+    end  = view.size() if end is None else end
+    text = view.substr(sublime.Region(beg, end))
+    for m in re_h.finditer(text):
+        title_beg = beg + m.start()
+        title_end = beg + m.end()
+        if m.group(2): # ATX    g2=hashes  g3=heading
+            level = m.end(2) - m.start(2)
+            title_text_beg = beg + m.start(3)
+            title_text_end = beg + m.end(  3)
+        else:          # SETEXT g4=text    g5=underlines
+            level = 2 if text[m.start(5)] == "-" else 1
+            title_text_beg = beg + m.start(4)
+            title_text_end = beg + m.end(  4)
+        if view.match_selector(title_beg, "- markup.raw"): #ignore front matter/raw code blocks
+            yield (title_beg, title_end, title_text_beg, title_text_end, level)
+    return None
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
@@ -251,6 +278,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         return self.get_selection(sublime.Region(pt_m, pt_m)) # no reg found or needed, use click Pt
 
     def handle(self, url: str, show_menu: bool) -> None:
+        view = self.view
         url = resolve_aliases(url, self.config["aliases"])
         urls = generate_urls(
             url,
@@ -259,8 +287,23 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self.config["file_suffixes"],
             self.config["trailing_delimiters"],
         )
+        scope_hash = list(self.config["scope_hash"])
 
         for u in urls:
+            for scope_pre in scope_hash:
+                if 'text.html.markdown' == scope_pre['scope' ] and\
+                    u.startswith(          scope_pre['prefix']):
+                    url_hs_text  = u.lstrip(scope_pre['prefix'])
+                    v_hs = tuple(md_Hs(view))
+                    for (title_beg, title_end, title_text_beg, title_text_end, level) in v_hs:
+                        title_text: str = view.substr(sublime.Region(title_text_beg, title_text_end))
+                        if _L: print(f"¦{url_hs_text}¦\n¦{title_text}¦@{level}")
+                        if title_text.lower() == url_hs_text.lower():
+                            new_sel = sublime.Region(title_beg, title_beg) #title_end to select Header
+                            view.sel().clear()
+                            view.sel().add(new_sel)
+                            view.show(new_sel)
+                            return
             path = self.abs_path(u)
 
             if os.path.isfile(path):
