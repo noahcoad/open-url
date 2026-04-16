@@ -33,6 +33,7 @@ Settings = TypedDict(
         "search_paths": list,
         "aliases": dict,
         "on_click_ignore_sel": bool,
+        "mouse_v_line_affordance": dict,
         "enable_file_commands": bool,
         "file_custom_commands": list,
         "enable_folder_commands": bool,
@@ -58,6 +59,7 @@ settings_keys = [
     "search_paths",
     "aliases",
     "on_click_ignore_sel",
+    "mouse_v_line_affordance",
     "enable_file_commands",
     "file_custom_commands",
     "enable_folder_commands",
@@ -145,12 +147,17 @@ def merge_settings(window, keys: list[str]) -> Settings:
 class OpenUrlCommand(sublime_plugin.TextCommand):
     config: Settings
 
+    def want_event(self) -> bool: #receive Event arg when command triggered by a mouse action
+        return True
+
     def run(
         self,
         edit=None,
+        event=None,
         url: str | None = None,
         show_menu: bool = True,
         show_input: bool = False,
+        mouse_only: bool = False,
     ) -> None:
         self.config = merge_settings(self.view.window(), settings_keys)
 
@@ -167,13 +174,74 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         if url is not None:
             urls = [url]
         else:
-            urls = [self.get_selection(region) for region in self.view.sel()]
+            if event and mouse_only:
+                urls = [self.get_mouse_url(event)]
+            else:
+                urls  = [self.get_selection(reg) for reg in self.view.sel()]
+                if event:
+                    url = self.get_mouse_url(event)
+                    if not url in urls:
+                        urls += [url]
         if len(urls) > 1:
             show_menu = False
         for url in urls:
             if _L: print(f"url: {url}")
             self.handle(url, show_menu)
 
+    def get_mouse_url(self, event) -> str:
+        view = self.view
+
+        x = event['x']; y = event['y']; pos_win = (x,y)
+
+        mouse_v_line_affordance = self.config["mouse_v_line_affordance"]
+        if mouse_v_line_affordance['is']:
+            pos_lyt = view.window_to_layout(pos_win)
+            pt_m = view.layout_to_text(pos_lyt)
+            pos_win_rev = view.text_to_window(pt_m)
+            c_lft = pos_win_rev[0]; c_top = pos_win_rev[1]
+
+            c_w = view.em_width()
+            c_h = view.line_height()
+
+            beg = 0; end = view.size()
+            line_beg = view.line(beg )
+            line_end = view.line(end )
+            line_pos = view.line(pt_m)
+            is_line_first = (line_pos == line_beg)
+            is_line_last  = (line_pos == line_end)
+
+            h_offset = mouse_v_line_affordance['width_chars'] # № of 'average-width' chars between line end and cursor position horizontally to consider user intent to be that of wanting to select line down and just positioning mouse cursor slightly above it
+            v_offset = mouse_v_line_affordance['height_line_fraction'] # fraction of line height above the bottom line to treat mouse positioned there to be "close to" the line below and if > h_offset, treat that as a point
+            x_off_r = c_lft + h_offset * c_w
+            y_off_b = c_top - v_offset * c_h + c_h
+            y_off_t = c_top + v_offset * c_h
+            if _L:
+                x_off_r_s:str = f"{c_lft}+{h_offset}*{c_w}"      ; x_diff_r_s:int = '>' if x > x_off_r else '≤'
+                y_off_b_s:str = f"{c_top}-{v_offset}*{c_h}+{c_h}"; y_diff_b_s:int = '>' if y > y_off_b else '≤'
+                y_off_t_s:str = f"{c_top}+{v_offset}*{c_h}"      ; y_diff_t_s:int = '<' if y < y_off_t else '≥'
+
+            is_move = False
+            if x > x_off_r:
+                if   y > y_off_b and not is_line_last:
+                    pos_win = (x, y+c_h)
+                    if _L: is_move = True; print(f'↓ move {x} {x_diff_r_s} {x_off_r} ({x_off_r_s})\n  y: {y} {y_diff_b_s} {y_off_b} ({y_off_b_s})')
+                elif y < y_off_t and not is_line_first:
+                    if _L: is_move = True; print(f'↑ move {x} {x_diff_r_s} {x_off_r} ({x_off_r_s})\n  y: {y} {y_diff_t_s} {y_off_t} ({y_off_t_s})')
+                    pos_win = (x, y-c_h)
+            if _L and not is_move:
+                print(f"✗ x: {x} {x_diff_r_s} {x_off_r} ({x_off_r_s})")
+                print(f"  y: {y} {y_diff_b_s} {y_off_b} ({y_off_b_s}) {'✓last' if is_line_last else '✗l'}")
+                print(f"  y: {y} {y_diff_t_s} {y_off_t} ({y_off_t_s}) {'✓frst' if is_line_first else '✗f'}")
+
+        pos_lyt = view.window_to_layout(pos_win)
+        pt_m = view.layout_to_text(pos_lyt)
+
+        if _L:
+            start: int = pt_m
+            end  : int = pt_m + 15
+            if end > view.size(): end = view.size()
+            sel  : str = self.view.substr(sublime.Region(start, end))
+            print(f"{x}¦{y} → {pt_m} → {pos_win_rev}  ↔{c_w} ↕{c_h} txt: ¦{sel}¦")
 
         min_sel = self.config["on_click_ignore_sel"]
         if min_sel > 0: # Find selection that includes the mouse clicked point

@@ -153,6 +153,11 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   - `url` URL text scope extract, e.g., `markup.underline.link` matches (`url`)
 - **on_click_ignore_sel**
   - on mouse clicks ignore selection ≤ this value and use expansion/scope rules to determine the URL. Helps avoid errors when you click and slightly drag your mouse by ≝1 char
+- **mouse_v_line_affordance**
+  - on clicks if your mouse cursor is positioned
+    - ≥4 "average-width" chars to the right from the end of the current line and
+    - at the top/bottom 0.33 of the current line's height</br>
+    Then you wanted to click on the line ↑above/below↓ to open the link there since there is nothing at this position at this line. For example, ![mouse affordance](doc/mouse_v_line_affordance.png), a click on line 1 here would select the URL at line 2 (depending on your scope/delimiter settings it might even be the correct `https://example.com`)
 - **trailing_delimiters**
   - if any of these characters are seen at the end of a URL, they are recursively removed; for file and folder paths, URLs **with and without** trailing delimiters are tried; default is `;.:`
 - **web_browser**
