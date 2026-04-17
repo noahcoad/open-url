@@ -163,6 +163,13 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
     Then you wanted to click on the line ↑above/below↓ to open the link there since there is nothing at this position at this line. For example, ![mouse affordance](doc/mouse_v_line_affordance.png), a click on line 1 here would select the URL at line 2 (depending on your scope/delimiter settings it might even be the correct `https://example.com`)
 - **trailing_delimiters**
   - if any of these characters are seen at the end of a URL, they are recursively removed; for file and folder paths, URLs **with and without** trailing delimiters are tried; default is `;.:`
+- **batch_command**
+  - (experimental) Show a panel-with-options when multiple links are opened and execute the selected command for the whole batch. Limitations:
+    - the panel is shown for only 1 data type with the highest count. If you select 5 files, 3 folders, and 3 web urls, the panel will show for 5 files
+    - if you have regex patters in settings, only the first item in the list will be tested against the pattern to find a command, which might not be suitable for other items
+    - URL modification actions are not available (so prompt|search action is skipped)
+    - commands are still executed sequentially, so might open 3 instances of Explorer to open 3 folders
+    - some URLs bypass the system altogether, e.g., [](#markdown_chapter) gets jumped to if matched even if it's not the most frequent group in a batch
 - **web_browser**
   - the browser that Open URL uses to open new tabs; must be a string [from this list](https://docs.python.org/3.3/library/webbrowser.html)
   - if you use an empty string, the "default browser" will be used

@@ -26,6 +26,14 @@
   // on mouse clicks ignore selection ≤ this value and use expansion/scope rules to determine the URL. Helps avoid errors when you click and slightly drag your mouse by ~1 char
   "on_click_ignore_sel": 1,
 
+  // (experimental) Show a panel-with-options when multiple links are opened and execute the selected command for the whole batch. Limitations:
+  // • the panel is shown for only 1 data type with the highest count. If you select 5 files, 3 folders, and 3 web urls, the panel will show for 5 files
+  // • if you have regex patters in settings, only the first item in the list will be tested against the pattern to find a command, which might not be suitable for other items
+  // • URL modification actions are not available (so prompt|search action is skipped)
+  // • commands are still executed sequentially, so might open 3 instances of Explorer to open 3 folders
+  // • some URLs bypass the system altogether, e.g., [](#markdown_chapter) gets jumped to if matched even if it's not the most frequent group in a batch
+  "batch_command": false,
+
   // if these delimiting characters are seen at the end of the URL, they are removed, e.g. sublimetext.com.; becomes sublimetext.com
   "trailing_delimiters": ";.:",
 

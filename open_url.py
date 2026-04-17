@@ -34,6 +34,7 @@ Settings = TypedDict(
         "search_paths": list,
         "aliases": dict,
         "on_click_ignore_sel": bool,
+        "batch_command": bool,
         "mouse_v_line_affordance": dict,
         "enable_file_commands": bool,
         "file_custom_commands": list,
@@ -61,6 +62,7 @@ settings_keys = [
     "search_paths",
     "aliases",
     "on_click_ignore_sel",
+    "batch_command",
     "mouse_v_line_affordance",
     "enable_file_commands",
     "file_custom_commands",
@@ -185,6 +187,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         show_menu: bool = True,
         show_input: bool = False,
         mouse_only: bool = False,
+        batch_command: bool | None = None,
     ) -> None:
         self.config = merge_settings(self.view.window(), settings_keys)
 
@@ -209,6 +212,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                     url = self.get_mouse_url(event)
                     if not url in urls:
                         urls += [url]
+        batch_command = self.config["batch_command"] if batch_command is None else batch_command
+        if len(urls) > 1 and batch_command:
+            show_menu = True
+            self.handle_batch(urls, show_menu)
+            return
         if len(urls) > 1:
             show_menu = False
         for url in urls:
@@ -277,7 +285,39 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                     return self.get_selection(reg)
         return self.get_selection(sublime.Region(pt_m, pt_m)) # no reg found or needed, use click Pt
 
-    def handle(self, url: str, show_menu: bool) -> None:
+    def handle_batch(self, urls: list[str], show_menu: bool) -> None:
+        view = self.view
+        is_batch = True
+
+        multi_act = {'file':[], 'dir':[], 'path':[], 'tab':[], 'other':[], 'modify':[],}
+        for url in urls: # collect resolved command arguments first
+            if _L: print(f"batch url: {url} show={show_menu}")
+            if (k_args := self.handle(url, show_menu, is_batch)):
+                if (key := k_args[0]) in multi_act:
+                    multi_act[key].append(k_args[1])
+        # Executed collected commands, selecting the longest batch
+        k_max = ''; count_max = 0; count_sum = 0
+        for k,v in multi_act.items():
+            # print(f"{k} {len(v)} {count_max}")
+            count = len(v); count_sum += count
+            if count > count_max: k_max = k; count_max = count
+        # print('results: ',k_max, count_max)
+        if count_max > 0:
+            if _L: print(f" performing {count_max} (of {count_sum}) ¦{k_max}¦ actions in a batch")
+            if   k_max == 'file':
+                self.file_action_batch(multi_act[k_max], show_menu, count_max, count_sum)
+            elif k_max == 'dir':
+                self.folder_action_batch(multi_act[k_max], show_menu, count_max, count_sum)
+            elif k_max == 'tab':
+                self.open_tab(multi_act[k_max])
+            elif k_max == 'other': # (clean_path, openers)
+                self.other_action_batch(multi_act[k_max], count_max, count_sum)
+            elif k_max == 'modify': # url  # asking for modifying multiple items not implemented
+                # self.modify_or_search_action_batch(multi_act[k_max])
+                pass
+
+
+    def handle(self, url: str, show_menu: bool, is_batch: bool = False) -> None:
         view = self.view
         url = resolve_aliases(url, self.config["aliases"])
         urls = generate_urls(
@@ -307,29 +347,30 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             path = self.abs_path(u)
 
             if os.path.isfile(path):
-                self.file_action(path, show_menu, u)
-                return
+                if is_batch: return ('file',(path,            u))
+                else:       self.file_action(path, show_menu, u); return
 
-            if self.view.file_name() and not u:
-                # open current file if url is empty
-                self.file_action(self.view.file_name(), show_menu, self.view.file_name())
-                return
+            if self.view.file_name() and not u: # open current file if url is empty
+                if is_batch: return ('file',(self.view.file_name(),            self.view.file_name()))
+                else:       self.file_action(self.view.file_name(), show_menu, self.view.file_name()); return
 
             if os.path.isdir(path):
-                self.folder_action(path, show_menu, u)
-                return
+                if is_batch: return ('dir',(path,            u))
+                else:    self.folder_action(path, show_menu, u); return
 
         clean_path = remove_trailing_delimiters(url, self.config["trailing_delimiters"])
         if is_url(clean_path) or clean_path.startswith("http://") or clean_path.startswith("https://"):
-            self.open_tab(prepend_scheme(clean_path))
-            return
+            args = prepend_scheme(clean_path)
+            if is_batch: return ('tab' ,args)
+            else:         self.open_tab(args); return
 
         openers = match_openers(self.config["other_custom_commands"], clean_path)
         if openers:
-            self.other_action(clean_path, openers, show_menu)
-            return
+            if is_batch: return ('other',(clean_path, openers           ))
+            else:       self.other_action(clean_path, openers, show_menu); return
 
-        self.modify_or_search_action(url)
+        if is_batch: return   ('modify' ,  url )
+        else: self.modify_or_search_action(url); return
 
     def get_selection(self, region) -> str:
         """Returns selection. If selection contains no characters, expands it
@@ -478,14 +519,17 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
         threading.Thread(target=sp, args=(args, kwargs)).start()
 
-    def open_tab(self, url: str) -> None:
+    def open_tab(self, url: str | list[str]) -> None:
         browser = self.config["web_browser"]
         browser_path = self.config["web_browser_path"]
 
         def ot(url, browser, browser_path):
             if browser_path:
-                if not webbrowser.get(browser_path).open(url):
-                    sublime.error_message(f'Could not open tab using your "web_browser_path" setting: {browser_path}')
+                if type(url) is str: url = [url]
+                for u in url:
+                    if not webbrowser.get(browser_path).open(url):
+                        sublime.error_message(f'Could not open tab using your "web_browser_path" setting: {browser_path}')
+                        return # on 1st error, don't spam errors for ruther tabs
                 return
             try:
                 controller = webbrowser.get(browser or None)
@@ -493,7 +537,8 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                 e = 'Python couldn\'t find the "{}" browser. Change "web_browser" in Open URL\'s settings.'
                 sublime.error_message(e.format(browser or "default"))
                 return
-            controller.open_new_tab(url)
+            if type(url) is str: url = [url]
+            for u in url: controller.open_new_tab(u)
 
         threading.Thread(target=ot, args=(url, browser, browser_path)).start()
 
@@ -545,11 +590,26 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         opts = [opener.get("label") for opener in openers]
         sublime.active_window().show_quick_panel(opts, lambda idx: self.other_done(idx, openers, path))
 
+    def other_action_batch(self, path_opener:list[tuple[str,list[dict]]], count_max: int, count_sum: int):
+        openers = path_opener[0][1] # openers for the 1st item
+        opts = [opener.get("label") for opener in openers]
+        is_mixed = count_max < count_sum
+        sublime.active_window().show_quick_panel(opts, lambda idx: self.other_done_batch(idx, path_opener),
+            sublime.QuickPanelFlags.NONE, -1, None, #selected_index on_highlight
+            f"{count_max} others{f' of {count_sum} mixed-type items (1st matched against a 𝕽𝔢 pattern)' if is_mixed else ''}"
+            )
+
     def other_done(self, idx, openers, path):
         if idx < 0:
             return
         opener = openers[idx]
         self.prepare_args_and_run(opener, path)
+
+    def other_done_batch(self, idx, path_opener):
+        if idx < 0: return
+        openers = path_opener[0][1] # openers for the 1st item
+        opener = openers[idx]
+        for p_o in path_opener: path = p_o[0]; self.prepare_args_and_run(opener, path)
 
     def folder_action(self, folder: str, show_menu: bool, raw_folder: str):
         """Choose from folder actions."""
@@ -567,6 +627,22 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             f"📁 {raw_folder}"
         )
 
+    def folder_action_batch(self, path_n_raw:list[tuple[str,str]], show_menu: bool, count_max: int, count_sum: int):
+        """Choose from folder actions for multiple folders"""
+        if not self.config["enable_folder_commands"]: return
+        openers = match_openers(self.config["folder_custom_commands"], path_n_raw[0][0])
+
+        if openers and not show_menu:
+            self.folder_done_batch(0, openers, path_n_raw)
+            return
+
+        is_mixed = count_max < count_sum
+        opts = [*[opener.get("label") for opener in openers], "search..."]
+        sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done_batch(idx, openers, path_n_raw),
+            sublime.QuickPanelFlags.NONE, -1, None, #selected_index on_highlight
+            f"📁 {count_max} folders{f' of {count_sum} mixed-type items (1st matched against a 𝕽𝔢 pattern)' if is_mixed else ''}"
+        )
+
     def folder_done(self, idx: int, openers: list[dict], folder: str, raw_folder: str):
         if idx < 0:
             return
@@ -577,6 +653,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         if sublime.platform() == "windows":
             folder = os.path.normcase(folder)
         self.prepare_args_and_run(opener, folder)
+
+    def folder_done_batch(self, idx: int, openers: list[dict], path_n_raw:list[tuple[str]]):
+        if idx < 0            : return
+        if idx >= len(openers): return # ↓ can't handle as is since this will open only panel #1 and skip others
+            # for p_r in path_n_raw: self.modify_or_search_action(p_r[1])
+
+        opener = openers[idx]
+        for p_r in path_n_raw:
+            folder = p_r[0]
+            if sublime.platform() == "windows":
+               folder = os.path.normcase(folder)
+            self.prepare_args_and_run(opener, folder)
+
 
     def file_action(self, path: str, show_menu: bool, raw_path: str) -> None:
         """Edit file or choose from file actions."""
@@ -595,6 +684,23 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             f"␜ {raw_path}"
         )
 
+    def file_action_batch(self, path_n_raw:list[tuple[str]], show_menu: bool, count_max: int, count_sum: int) -> None:
+        """Edit files or choose from file actions"""
+        # path_n_raw = (path, raw_path)
+        if not self.config["enable_file_commands"]: return
+        if not show_menu:
+            for p_r in path_n_raw: self.view.window().open_file(p_r[0])
+            return
+
+        openers = match_openers(self.config["file_custom_commands"], path_n_raw[0][0])
+        is_mixed = count_max < count_sum
+        sublime.active_window().show_quick_panel(
+            ["edit", *[opener.get("label") for opener in openers], "search..."],
+            lambda idx: self.file_done_batch(idx, openers, path_n_raw),
+            sublime.QuickPanelFlags.NONE, -1, None, #selected_index on_highlight
+            f"␜ {count_max} files{f' of {count_sum} mixed-type items (1st matched against a 𝕽𝔢 pattern)' if is_mixed else ''}"
+        )
+
     def file_done(self, idx: int, openers: list[dict], path: str, raw_path: str):
         if idx < 0:
             return
@@ -608,3 +714,18 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         if sublime.platform() == "windows":
             path = os.path.normcase(path)
         self.prepare_args_and_run(opener, path)
+
+    def file_done_batch(self, idx: int, openers: list[dict], path_n_raw:list[tuple[str]]):
+        if idx  < 0               : return
+        if idx == 0               :
+            for p_r in path_n_raw : self.view.window().open_file(p_r[0])
+            return
+        if idx >= len(openers) + 1: # ↓ can't handle as is since this will open only panel #1 and skip others
+            # for p_r in path_n_raw : self.modify_or_search_action(p_r[1])
+            return
+
+        opener = openers[idx - 1]
+        for p_r in path_n_raw:
+            path = p_r[0] # regular path
+            if sublime.platform() == "windows": path = os.path.normcase(path)
+            self.prepare_args_and_run(opener, path)
