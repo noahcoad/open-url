@@ -55,7 +55,7 @@
     {
       "label": "open with default application",
       "os": "windows",
-      "commands": ["start"],
+      "commands": ["start",""],
       "kwargs": { "shell": true }
     },
 
