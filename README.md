@@ -18,7 +18,8 @@ Here's a bunch of ways you can run the command.
 
 - <kbd>ctrl+u</kbd> (OSX), <kbd>ctrl+alt+u</kbd> (Linux/Windows)
 - right-click > **Open URL**
-- </kbd>alt</kbd> + double-click
+- <kbd>alt</kbd> + double-click
+- <kbd>alt</kbd> + right click (opens the link without moving your text cursor)
 - <kbd>shift+cmd+p</kbd>, then look for **Open URL**
 
 ### Give it a try
@@ -135,8 +136,40 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
 - **delimiters**
   - characters at which auto-expansion of selected path stops, e.g. `` \t\n\r\"'`,*<>[](){}``
   - the default settings are Markdown friendly
+- **delimiters_scoped**
+  - Same as delimiters, but for a specific scope, uses Sublime's [score_selector API](https://www.sublimetext.com/docs/api_reference.html#sublime.score_selector) to test whether a given key matches the scope of the current selection. The scope with the maximum match score wins.
+  - A list of `scope`/`scope_match_threshold`/`delimiters` dictionaries.
+    - **scope_match_threshold** Minimum score to consider a comparison a match (0 no match; >0 match, higher is better), e.g., for `text.html.markdown markup.list.unnumbered.markdown meta.paragraph.list.markdown`
+      -   0 `paragraph`
+      -   2 `text` `text.`
+      -   4 `text.html`
+      -   6 `text.html.markdown`
+      - 256 `meta.paragraph`
+- **scope_stop**
+  - A list of scopes to stop path expansion at, e.g., a valid path symbol `//` when it's scoped as a `punctuation.definition.comment`
+- **scope_url**
+  - Find URLs based on scope instead of chars: `[handle⎀this](example.com)` for markdown without having to click on `example.com` in parenthesis. Searched first.
+  - `file` file scopes to check in, e.g., `text.html.markdown`
+  - `txt` text scope to test against, e.g., `meta.link.inline` contains both `[info]` and `(url)` in a mar
+  - `url` URL text scope extract, e.g., `markup.underline.link` matches (`url`)
+- **scope_hash**
+  - A dictionary of `scope`s where a URL with the `prefix` should open the current file's position (e.g., `#section` in markdown). Currently only markdown with `#`prefix are supported
+- **on_click_ignore_sel**
+  - on mouse clicks ignore selection ≤ this value and use expansion/scope rules to determine the URL. Helps avoid errors when you click and slightly drag your mouse by ≝1 char
+- **mouse_v_line_affordance**
+  - on clicks if your mouse cursor is positioned
+    - ≥4 "average-width" chars to the right from the end of the current line and
+    - at the top/bottom 0.33 of the current line's height</br>
+    Then you wanted to click on the line ↑above/below↓ to open the link there since there is nothing at this position at this line. For example, ![mouse affordance](doc/mouse_v_line_affordance.png), a click on line 1 here would select the URL at line 2 (depending on your scope/delimiter settings it might even be the correct `https://example.com`)
 - **trailing_delimiters**
   - if any of these characters are seen at the end of a URL, they are recursively removed; for file and folder paths, URLs **with and without** trailing delimiters are tried; default is `;.:`
+- **batch_command**
+  - (experimental) Show a panel-with-options when multiple links are opened and execute the selected command for the whole batch. Limitations:
+    - the panel is shown for only 1 data type with the highest count. If you select 5 files, 3 folders, and 3 web urls, the panel will show for 5 files
+    - if you have regex patters in settings, only the first item in the list will be tested against the pattern to find a command, which might not be suitable for other items
+    - URL modification actions are not available (so prompt|search action is skipped)
+    - commands are still executed sequentially, so might open 3 instances of Explorer to open 3 folders
+    - some URLs bypass the system altogether, e.g., [](#markdown_chapter) gets jumped to if matched even if it's not the most frequent group in a batch
 - **web_browser**
   - the browser that Open URL uses to open new tabs; must be a string [from this list](https://docs.python.org/3.3/library/webbrowser.html)
   - if you use an empty string, the "default browser" will be used
@@ -145,9 +178,13 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
   - the path to your web browser executable for opening web URLs
   - this setting overrides the default web browser and the **web_browser** setting
   - [read the top answer here](https://stackoverflow.com/questions/22445217/python-webbrowser-open-to-open-chrome-browser), or look in settings for examples
+- **enable_web_search**
+  - if selection is not recognized as a file/folder/URL, pass it to web searches
 - **web_searchers**
   - if your selection isn't a file, a folder, or a URL, you can choose to pass it to a web searcher, which is just a URL that searches for the selected text
   - example: `{ "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" }`
+- **live_edit**
+  - if selection is not recognized as a file/folder/url, show a panel to edit it
 - **aliases**
   - first transform applied to URL, a dict with keys and values; replace each **key** in URL with corresponding **value**
   - example: `{ "{{BASE_PATH}}": "src/base" }`
@@ -160,9 +197,13 @@ To customize these, hit <kbd>shift+cmd+p</kbd> to open the Command Palette, and 
 - **file_suffixes**
   - path transform; adds these suffixes to filename only
   - example: `[".js", ".ts", ".tsx"]`
+- **enable_file_commands**
+  - allows disabling file path handling, e.g., if you only want to open web links
 - **file_custom_commands**
   - pass a file to shell commands whose pattern matches the file path
   - example, for copying the file path to the clipboard: `{ "label": "copy path", "commands": "printf '$url' | pbcopy" }`
+- **enable_folder_commands**
+  - allows disabling folder path handling, e.g., if you only want to open web links
 - **folder_custom_commands**
   - pass a folder to shell commands whose pattern matches the folder path
   - example, for opening the folder in iTerm: `{ "label": "open in terminal", "commands": [ "open", "-a", "/Applications/iTerm.app" ] }`
