@@ -1,0 +1,71 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# find_selection cases
+# cursor: integer position in text
+# selection: [a, b] pre-existing range (mutually exclusive with cursor)
+# expected: what find_selection() expands/returns after strip()
+# ─────────────────────────────────────────────────────────────────────────────
+selection_cases:
+
+  # standalone URLs
+  - {label: domain-bare,        text: "google.com",                  cursor: 3, expected: "google.com"}
+  - {label: domain-with-path,   text: "coad.net/noah",               cursor: 3, expected: "coad.net/noah"}
+  - {label: https-url,          text: "https://example.com/path",    cursor: 5, expected: "https://example.com/path"}
+  - {label: https-complex,      text: "https://amazonaus.sharepoint.com/:x:/r/sites/foo?d=abc&csf=1", cursor: 5,
+     expected: "https://amazonaus.sharepoint.com/:x:/r/sites/foo?d=abc&csf=1"}
+  - {label: sharepoint-colon-x-mid-cursor, text: "https://amazon.sharepoint.com/:x:/s/Intuit/IQCQGlsx38hzRq2jXt9SDmQSAXgqLmKTeVgRWh6a5wdHm9A?e=X0EnJ3", cursor: 20,
+     expected: "https://amazon.sharepoint.com/:x:/s/Intuit/IQCQGlsx38hzRq2jXt9SDmQSAXgqLmKTeVgRWh6a5wdHm9A?e=X0EnJ3"}
+
+  # standalone file paths
+  - {label: tilde-path,         text: "~/code/notes.txt",            cursor: 3, expected: "~/code/notes.txt"}
+  - {label: abs-path,           text: "/Users/ncoad/notes.txt",      cursor: 5, expected: "/Users/ncoad/notes.txt"}
+  - {label: abs-path-line-num,  text: "/Users/ncoad/notes.txt:5",    cursor: 5, expected: "/Users/ncoad/notes.txt:5"}
+  - {label: abs-path-search,    text: '/Users/ncoad/notes.txt:"change log"', cursor: 5,
+     expected: '/Users/ncoad/notes.txt:"change log"'}
+
+  # cursor in surrounding text
+  - {label: url-mid-sentence,   text: "boo google.com hoo",          cursor: 6, expected: "google.com"}
+  - {label: word-at-cursor,     text: "love dog",                    cursor: 2, expected: "love"}     # cursor inside "love"
+  - {label: file-in-sentence,   text: "blast notes.txt",             cursor: 7, expected: "notes.txt"}  # cursor on "notes"
+
+  # pre-existing selection (range instead of cursor)
+  - {label: selection-multiword, text: "foobar door house",  selection: [0, 11], expected: "foobar door"}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# parse_file_location cases
+# loc_type / loc_value: expected location dict fields (omit both for None)
+# ─────────────────────────────────────────────────────────────────────────────
+parse_cases:
+  - {label: plain-file,     input: "file.py",                path: "file.py"}
+  - {label: line-num,       input: "file.py:42",             path: "file.py",    loc_type: line,   loc_value: 42}
+  - {label: search-str,     input: 'file.py:"hello world"',  path: "file.py",    loc_type: search, loc_value: "hello world"}
+  - {label: regex-loc,      input: "file.py:/def foo/",      path: "file.py",    loc_type: regex,  loc_value: "def foo"}
+  - {label: https-passthru, input: "https://example.com",    path: "https://example.com"}
+  - {label: tilde-abs-line, input: "~/notes.txt:7",          path: "~/notes.txt", loc_type: line,  loc_value: 7}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# _find_loc_sep cases
+# line_number_only defaults to false when omitted
+# ─────────────────────────────────────────────────────────────────────────────
+loc_sep_cases:
+  - {label: line-num,           text: "file.py:42",       expected: 7}
+  - {label: search-str,         text: 'file.py:"text"',   expected: 7}
+  - {label: regex,              text: "file.py:/pat/",    expected: 7}
+  - {label: http-url,           text: "http://x.com",     expected: -1}
+  - {label: no-sep,             text: "file.py",          expected: -1}
+  - {label: line-only-ok,       text: "file.py:42",       expected: 7,  line_number_only: true}
+  - {label: line-only-skip-str, text: 'file.py:"text"',   expected: -1, line_number_only: true}
+  - {label: line-only-skip-re,  text: "file.py:/pat/",    expected: -1, line_number_only: true}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# _scan_line_for_url cases
+# text: full line content (cursor assumed at position 0)
+# expected: first URL/file token found, or null if nothing found
+# ─────────────────────────────────────────────────────────────────────────────
+scan_line_cases:
+  - {label: url-after-label,        text: "Dream Analysis, https://claude.ai/chat/381fa171-e701-4f2d-9f89-1bb90cbb1607",                                  expected: "https://claude.ai/chat/381fa171-e701-4f2d-9f89-1bb90cbb1607"}
+  - {label: url-after-long-label,   text: "Travel Flight and Hotel Itinerary Template, https://claude.ai/chat/75498511-2bdc-4d1d-8991-95bcc88de336",      expected: "https://claude.ai/chat/75498511-2bdc-4d1d-8991-95bcc88de336"}
+  - {label: url-only,               text: "https://example.com/path",                                                                                      expected: "https://example.com/path"}
+  - {label: no-url,                 text: "just some words no url here",                                                                                    expected: null}
+  - {label: url-in-comment,         text: "# see https://example.com for docs",                                                                            expected: "https://example.com"}
+  - {label: bare-domain-after-text, text: "visit google.com today",                                                                                        expected: "google.com"}
+  - {label: url-mid-line,           text: "label: https://example.com more text",                                                                          expected: "https://example.com"}

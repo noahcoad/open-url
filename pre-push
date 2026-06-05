@@ -6,3 +6,4 @@ isort --check .
 black --check .
 flake8 .
 pyright
+python3 test_open_url.py
