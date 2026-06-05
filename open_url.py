@@ -286,14 +286,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             if multi_line:
                 urls = [line.strip() for line in self.view.substr(sels[0]).splitlines() if line.strip()]
             elif len(sels) > 1:
-                urls = [self.get_selection(region) for region in sels]
+                urls = [self.view.substr(self.find_selection(region)).strip() for region in sels]
             else:
                 # Single empty cursor or single-line selection — apply line-start scan heuristic.
                 sel0 = sels[0]
                 cursor_at_line_start = sel0.empty() and bool(
                     self.view.classify(sel0.begin()) & sublime.CLASS_LINE_START
                 )
-                u = self.get_selection(sel0)
+                u = self.view.substr(self.find_selection(sel0)).strip()
                 if cursor_at_line_start and not self._is_resolvable(u):
                     scanned = self._scan_line_for_url(sel0.begin())
                     if scanned:
@@ -303,6 +303,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         if len(urls) > 1:
             show_menu = False
         for url in urls:
+            # strip enclosing quotes/backticks if the entire selection is wrapped
+            if len(url) >= 2 and url[0] == url[-1] and url[0] in ('"', "'", "`"):
+                url = url[1:-1]
+            # un-escape backslash-escaped spaces (so "hello\ world.txt" -> "hello world.txt")
+            url = url.replace("\\ ", " ")
             url = strip_file_scheme(url)
             url = os.path.expandvars(url)
             self.handle(url, show_menu)

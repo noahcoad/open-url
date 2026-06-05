@@ -30,6 +30,17 @@ selection_cases:
   # pre-existing selection (range instead of cursor)
   - {label: selection-multiword, text: "foobar door house",  selection: [0, 11], expected: "foobar door"}
 
+  # deep links with regex containing characters that are default get_selection delimiters
+  # (* < > , etc.) — find_selection's hardcoded terminator excludes them so the whole
+  # token is captured.  Regression for ~/file.txt:/^\s*http/ failing to expand.
+  - {label: regex-with-asterisk, text: "~/txt/my/cmd_imsg.txt:/^\\s*http/",  cursor: 5,
+     expected: "~/txt/my/cmd_imsg.txt:/^\\s*http/"}
+  - {label: regex-cursor-inside-pattern, text: "~/txt/my/cmd_imsg.txt:/^\\s*http/", cursor: 28,
+     expected: "~/txt/my/cmd_imsg.txt:/^\\s*http/"}
+  - {label: regex-with-comma, text: "file.py:/foo,bar/", cursor: 3,  expected: "file.py:/foo,bar/"}
+  - {label: regex-with-angle, text: "file.py:/<tag>/",   cursor: 3,  expected: "file.py:/<tag>/"}
+  - {label: search-with-comma, text: 'file.py:"a,b,c"', cursor: 3,   expected: 'file.py:"a,b,c"'}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # parse_file_location cases
 # loc_type / loc_value: expected location dict fields (omit both for None)

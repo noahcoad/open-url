@@ -748,6 +748,15 @@ if "sublime" not in sys.modules:
         def test_regex_with_spaces(self):
             self.assertEqual(_expand("file.py:/hello world/", 3), "file.py:/hello world/")
 
+        def test_regex_with_special_chars_inside(self):
+            # Regression: ~/file.txt:/^\s*http/ — "*" is a default delimiter for
+            # get_selection but find_selection's hardcoded terminator excludes it
+            # so the whole deep-link token is captured.
+            text = "~/txt/my/cmd_imsg.txt:/^\\s*http/"
+            self.assertEqual(_expand(text, 5), text)
+            # cursor inside the regex part
+            self.assertEqual(_expand(text, 25), text)
+
         def test_quoted_path_selects_contents(self):
             text = '"file with spaces.txt"'
             self.assertEqual(_expand(text, 5), "file with spaces.txt")
