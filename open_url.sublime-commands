@@ -1,18 +1,8 @@
 [
-  { "caption": "Open URL", "command": "open_url" },
-
-  {
-    "caption": "Open URL (Skip Menu)",
-    "command": "open_url",
-    "args": { "show_menu": false }
-  },
-  {
-    "caption": "Open URL (Use Input)",
-    "command": "open_url",
-    "args": { "show_input": true }
-  },
-
+  { "caption": "Open URL",                        "command": "open_url" },
   { "caption": "Open URL: Select URL",            "command": "select_url" },
+  { "caption": "Open URL: Skip Menu",             "command": "open_url",       "args": { "show_menu": false } },
+  { "caption": "Open URL: Use Input",             "command": "open_url",       "args": { "show_input": true } },
   { "caption": "Open URL: Copy Deep Link",        "command": "copy_deep_link" },
   { "caption": "Open URL: Copy Transformed Path", "command": "copy_transformed_path" },
   { "caption": "Open URL: Paste Relative Path",   "command": "paste_relative_path" }
