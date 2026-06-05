@@ -119,6 +119,35 @@ One path is generated for each combination of search path, file prefix and file 
 
 Imagine you're building a JS app that you've set up to use absolute imports, relative to the `src` directory. Your app has a file at `src/utils/module.js`. Open URL can resolve this file using just `utils/module`. Very nice!
 
+### Deep Links
+
+Open URL recognizes several "deep link" suffixes attached to a path with a colon, so you can jump to a specific spot inside a file. All forms work both ways: **Open URL** navigates to them, and **Open URL: Copy Deep Link** generates them for the cursor or selection.
+
+| Suffix form | Example | What it does |
+|---|---|---|
+| `:LINE` | `notes.md:42` | Open `notes.md` at line 42. |
+| `:START-END` | `notes.md:120-180` | Open `notes.md` and select lines 120–180 (inclusive). |
+| `:"text"` | `notes.md:"hello world"` | Open `notes.md`; jump to the first case-insensitive match of `hello world`. |
+| `:/regex/` | `notes.md:/^\s*http/` | Open `notes.md`; jump to the first match of the regex. |
+| `:LINE:"text"` | `notes.md:11:"hello"` | Like `:"text"`, but among multiple matches prefer the one nearest line 11. If nothing matches, fall back to line 11. |
+| `:LINE:/regex/` | `notes.md:11:/^\s*http/` | Same idea with regex. Robust to file edits — the line anchors the location even when the regex is loose or the line moved. |
+
+The combined `:LINE:/regex/` form is what **Copy Deep Link** generates by default. The line number anchors the navigation; the regex (or quoted text) is a hint that improves precision when lines have shifted.
+
+#### Copy Deep Link output
+
+| Cursor / selection state | Copies |
+|---|---|
+| Empty cursor on a blank line | `path:LINE` |
+| Empty cursor on a non-blank line | `path:LINE:/^first five words/` |
+| Text selected | `path:LINE:"selected text"` |
+
+Set `deep_link_line_number_only: true` in your settings to drop the regex/search part and emit (and parse) line-number-only deep links — useful if you find loose regex anchors more annoying than helpful.
+
+#### Pasting deep links
+
+**Open URL: Paste Relative Path** preserves the suffix when pasting a clipboard path. So if your clipboard contains `/abs/path/notes.md:11:/^foo/`, pasting from a file in the same project yields `../notes.md:11:/^foo/` (with the suffix intact).
+
 ### Multiple Cursors
 
 Copy these URLs into Sublime Text and select both lines using multiple cursors, then run URL opener.

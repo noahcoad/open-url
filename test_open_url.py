@@ -546,6 +546,27 @@ if "sublime" not in sys.modules:
             self.assertEqual(path, "file.py")
             self.assertEqual(loc, {"type": "regex", "value": r"^\s*http", "line": 11})
 
+        def test_range_simple(self):
+            path, loc = parse_file_location("file.txt:123-320")
+            self.assertEqual(path, "file.txt")
+            self.assertEqual(loc, {"type": "range", "start": 123, "end": 320})
+
+        def test_range_same_start_end(self):
+            path, loc = parse_file_location("file.txt:5-5")
+            self.assertEqual(path, "file.txt")
+            self.assertEqual(loc, {"type": "range", "start": 5, "end": 5})
+
+        def test_range_with_absolute_path(self):
+            path, loc = parse_file_location("/Users/me/notes.txt:10-25")
+            self.assertEqual(path, "/Users/me/notes.txt")
+            self.assertEqual(loc, {"type": "range", "start": 10, "end": 25})
+
+        def test_range_does_not_match_url_port_minus(self):
+            # ":8080-foo" — second token isn't a digit, falls through
+            path, loc = parse_file_location("foo:8080-bar")
+            self.assertEqual(path, "foo:8080-bar")
+            self.assertIsNone(loc)
+
         def test_combined_line_plus_search(self):
             path, loc = parse_file_location('file.py:11:"hello"')
             self.assertEqual(path, "file.py")
@@ -1454,6 +1475,39 @@ if "sublime" not in sys.modules:
             # line hint = 11 (1-based) → row 10 (0-based) wins over row 1
             cmd._navigate_in_view(view, {"type": "regex", "value": "aaa", "line": 11})
             self.assertEqual(view.rowcol(chosen[0].begin())[0], 10)
+
+        def test_range_selects_all_lines_inclusive(self):
+            text = "\n".join("line%d" % (i + 1) for i in range(20))
+            view, cmd = self._make_view_and_cmd(text)
+            chosen = []
+            view.show_at_center = lambda r: chosen.append(r)
+            captured = []
+
+            class _Sel:
+                def clear(self):
+                    pass
+
+                def add(self, r):
+                    captured.append(r)
+
+            view.sel = lambda: _Sel()
+            # MockView already implements text_point via line() — but it doesn't.
+            # text_point(row, col) maps to byte offset of (row, col).
+            def text_point(row, col):
+                offset = 0
+                for i in range(row):
+                    nl = text.find("\n", offset)
+                    if nl == -1:
+                        return offset
+                    offset = nl + 1
+                return offset + col
+
+            view.text_point = text_point
+            cmd._navigate_in_view(view, {"type": "range", "start": 3, "end": 5})
+            # rows are 0-indexed: start row 2 ("line3"), end row 4 ("line5")
+            self.assertEqual(len(captured), 1)
+            region = captured[0]
+            self.assertEqual(view.substr(region), "line3\nline4\nline5")
 
         def test_combined_falls_back_to_line_when_no_match(self):
             text = "\n".join(["aaa"] * 20)

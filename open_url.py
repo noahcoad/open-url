@@ -584,6 +584,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         if location["type"] == "line":
             window.open_file("%s:%d:0" % (path, location["value"]), sublime.ENCODED_POSITION)
             return
+        if location["type"] == "range":
+            # open via ENCODED_POSITION so we land on the first line, then expand
+            # the selection to the full range once the view finishes loading.
+            window.open_file("%s:%d:0" % (path, location["start"]), sublime.ENCODED_POSITION)
+            view = window.find_open_file(path) if hasattr(window, "find_open_file") else None
+            if view is None:
+                view = window.active_view()
+            self._navigate_when_loaded(view, location)
+            return
         view = window.open_file(path)
         self._navigate_when_loaded(view, location)
 
@@ -594,6 +603,20 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             self._navigate_in_view(view, location)
 
     def _navigate_in_view(self, view, location: dict) -> None:
+        if location["type"] == "range":
+            # Select all text from start of `start` line through end of `end` line.
+            start = max(0, location["start"] - 1)
+            end = max(start, location["end"] - 1)
+            begin_pt = view.text_point(start, 0)
+            # end of `end` line: text_point of next row, then back up one char if not at EOF
+            end_line_pt = view.text_point(end, 0)
+            end_line = view.line(end_line_pt)
+            target = sublime.Region(begin_pt, end_line.end())
+            view.sel().clear()
+            view.sel().add(target)
+            view.show_at_center(target)
+            return
+
         if location["type"] == "search":
             pattern = re.escape(location["value"])
             flags = sublime.IGNORECASE
@@ -977,11 +1000,15 @@ def apply_path_transform(file_path: str, transform: str) -> tuple[str | None, st
     return (stdout, None)
 
 
+_RANGE_RE = re.compile(r"^(\d+)-(\d+)$")
+
+
 def parse_file_location(url: str, line_number_only: bool = False) -> tuple[str, dict | None]:
     """Split path:location syntax. Web URLs are returned unchanged.
 
     Returns (path, location_dict) where location_dict is one of:
       {"type": "line",   "value": int}                        — ":42"
+      {"type": "range",  "start": int, "end": int}            — ":123-320"
       {"type": "search", "value": str, "line": int|None}      — ':"text"'  or  ':42:"text"'
       {"type": "regex",  "value": str, "line": int|None}      — ':/regex/' or  ':42:/regex/'
     or None if no valid location suffix is present.
@@ -1013,6 +1040,14 @@ def parse_file_location(url: str, line_number_only: bool = False) -> tuple[str, 
 
     if loc_token.isdigit():
         return (raw_path, {"type": "line", "value": int(loc_token)})
+
+    # range form: ":123-320" — select all lines from start to end (inclusive)
+    range_match = _RANGE_RE.match(loc_token)
+    if range_match:
+        start = int(range_match.group(1))
+        end = int(range_match.group(2))
+        return (raw_path, {"type": "range", "start": start, "end": end})
+
     if loc_token.startswith('"') and loc_token.endswith('"') and len(loc_token) >= 2:
         return (raw_path, {"type": "search", "value": loc_token[1:-1], "line": line_hint})
     if loc_token.startswith("/") and loc_token.endswith("/") and len(loc_token) >= 2:
