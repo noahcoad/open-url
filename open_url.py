@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import subprocess
 import threading
 import urllib.parse
@@ -30,6 +31,8 @@ Settings = TypedDict(
         "folder_custom_commands": list,
         "other_custom_commands": list,
         "deep_link_line_number_only": bool,
+        "copy_path_transform": str,
+        "paste_relative_path_markdown_backticks": bool,
     },
 )
 
@@ -48,6 +51,8 @@ settings_keys = [
     "folder_custom_commands",
     "other_custom_commands",
     "deep_link_line_number_only",
+    "copy_path_transform",
+    "paste_relative_path_markdown_backticks",
 ]
 
 
@@ -297,6 +302,116 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             end += 1
         sel = self.view.substr(sublime.Region(start, end))
         return sel.strip()
+
+    def find_selection(self, region=None) -> "sublime.Region":
+        """Smarter expansion than get_selection: handles enclosing quotes/backticks
+        and deep-link tokens (path:42, path:"text", path:/regex/).
+        """
+        s = region if region is not None else self.view.sel()[0]
+        start = s.a
+        end = s.b
+
+        if start != end:
+            return sublime.Region(start, end)
+
+        view_size = self.view.size()
+        terminator = list("\t\"'`><, []()")
+
+        # If cursor is inside an enclosing quote/backtick, expand to the matching pair.
+        found_enclosing = False
+        for delim in ('"', "'", "`"):
+            i = start
+            while i > 0 and not (self.view.classify(i) & sublime.CLASS_LINE_START):
+                if self.view.substr(i - 1) == delim:
+                    j = start
+                    while j < view_size:
+                        if self.view.substr(j) == delim:
+                            after_close = j + 1
+                            if (
+                                after_close + 1 < view_size
+                                and self.view.substr(after_close) == ":"
+                                and (
+                                    self.view.substr(after_close + 1).isdigit()
+                                    or self.view.substr(after_close + 1) == '"'
+                                    or (
+                                        self.view.substr(after_close + 1) == "/"
+                                        and (
+                                            after_close + 2 >= view_size
+                                            or self.view.substr(after_close + 2) != "/"
+                                        )
+                                    )
+                                )
+                            ):
+                                suffix_end = after_close + 1
+                                while (
+                                    suffix_end < view_size
+                                    and self.view.substr(suffix_end) not in list("\t ><,[]()'\"")
+                                    and not (self.view.classify(suffix_end) & sublime.CLASS_LINE_END)
+                                ):
+                                    suffix_end += 1
+                                start = i - 1
+                                end = suffix_end
+                            else:
+                                start, end = i, j
+                            found_enclosing = True
+                            break
+                        if self.view.classify(j) & sublime.CLASS_LINE_END:
+                            break
+                        j += 1
+                    break
+                i -= 1
+            if found_enclosing:
+                break
+
+        if not found_enclosing:
+            # walk back to nearest terminator (treat backslash-escaped chars as part of the token)
+            while (
+                start > 0
+                and (
+                    self.view.substr(start - 1) not in terminator
+                    or (start >= 2 and self.view.substr(start - 2) == "\\")
+                )
+                and not (self.view.classify(start) & sublime.CLASS_LINE_START)
+            ):
+                start -= 1
+
+            # walk forward; once past a deep-link ':' separator, bracketed contents
+            # ("..." or /.../) keep being included until the closing delim.
+            loc_delim: str | None = None
+            passed_sep = False
+            in_url = "://" in self.view.substr(sublime.Region(start, end))
+            while end < view_size:
+                if self.view.classify(end) & sublime.CLASS_LINE_END:
+                    break
+                c = self.view.substr(end)
+                if loc_delim:
+                    if c == loc_delim and not (end >= 1 and self.view.substr(end - 1) == "\\"):
+                        end += 1
+                        break
+                    end += 1
+                    continue
+                if c == ":" and end + 2 < view_size and self.view.substr(end + 1) == "/" and self.view.substr(end + 2) == "/":
+                    in_url = True
+                if not passed_sep and not in_url and c == ":" and end + 1 < view_size:
+                    nxt = self.view.substr(end + 1)
+                    if nxt.isdigit() or nxt == '"' or (
+                        nxt == "/" and (end + 2 >= view_size or self.view.substr(end + 2) != "/")
+                    ):
+                        passed_sep = True
+                        end += 1
+                        if end < view_size and self.view.substr(end) in ('/', '"'):
+                            loc_delim = self.view.substr(end)
+                            end += 1
+                        continue
+                if c in terminator and not (end >= 1 and self.view.substr(end - 1) == "\\"):
+                    break
+                end += 1
+
+        return sublime.Region(start, end)
+
+    def selection(self) -> str:
+        """Convenience: text of find_selection() with surrounding whitespace stripped."""
+        return self.view.substr(self.find_selection()).strip()
 
     def _is_resolvable(self, url: str | None) -> bool:
         """True if url is a web URL, matches a domain pattern, or resolves to a file/dir.
@@ -567,6 +682,24 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         self.prepare_args_and_run(opener, path)
 
 
+def apply_path_transform(file_path: str, transform: str) -> tuple[str | None, str | None]:
+    """Run ``transform`` as a shell command, replacing {path} with shlex-quoted file_path.
+
+    Returns (transformed_path, error_message). On success the second element is None;
+    on failure the first is None and the second describes what went wrong.
+    """
+    cmd = transform.replace("{path}", shlex.quote(file_path))
+    try:
+        result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except Exception as e:
+        return (None, "copy_path_transform error: %s" % e)
+    stdout = result.stdout.decode("utf-8", errors="replace").strip()
+    stderr = result.stderr.decode("utf-8", errors="replace").strip()
+    if result.returncode != 0:
+        return (None, "copy_path_transform failed (exit %d): %s" % (result.returncode, stderr or stdout))
+    return (stdout, None)
+
+
 def parse_file_location(url: str, line_number_only: bool = False) -> tuple[str, dict | None]:
     """Split path:location syntax. Web URLs are returned unchanged.
 
@@ -594,3 +727,191 @@ def parse_file_location(url: str, line_number_only: bool = False) -> tuple[str, 
     if loc_token.startswith("/") and loc_token.endswith("/") and len(loc_token) >= 2:
         return (raw_path, {"type": "regex", "value": loc_token[1:-1]})
     return (url, None)
+
+
+def _settings_obj():
+    return sublime.load_settings("open_url.sublime-settings")
+
+
+class SelectUrlCommand(sublime_plugin.TextCommand):
+    """Expand cursor to URL/path boundaries, add to selection, copy to clipboard."""
+
+    def run(self, edit=None, url: str | None = None) -> None:
+        # Bind a transient config so OpenUrlCommand.find_selection sees delimiters.
+        helper = OpenUrlCommand(self.view)
+        helper.config = merge_settings(self.view.window(), settings_keys)
+        region = helper.find_selection()
+        self.view.sel().add(region)
+        sublime.set_clipboard(self.view.substr(region).strip())
+
+    def is_enabled(self) -> bool:
+        return self.view is not None
+
+
+class CopyDeepLinkCommand(sublime_plugin.TextCommand):
+    """Copy ``file_path:location`` deep link for the current cursor / selection.
+
+    Three output forms based on selection state:
+      - text selected      → file_path:"selected text"
+      - empty + non-blank  → file_path:/^first five words/   (regex anchor)
+      - empty + blank line → file_path:line_number
+    Setting ``deep_link_line_number_only`` collapses all three to line numbers.
+    Setting ``copy_path_transform`` pipes file_path through a shell command first.
+    """
+
+    def run(self, edit=None) -> None:
+        file_path = self.view.file_name()
+        if not file_path:
+            sublime.status_message("File has no path")
+            return
+
+        config = _settings_obj()
+        transform = config.get("copy_path_transform", "")
+        if transform:
+            new_path, err = apply_path_transform(file_path, transform)
+            if err is not None:
+                sublime.status_message(err)
+                print("open_url " + err)
+                return
+            file_path = new_path or ""
+
+        line_only = config.get("deep_link_line_number_only", False)
+        sel = self.view.sel()[0]
+        if not sel.empty():
+            if line_only:
+                line_num = self.view.rowcol(sel.begin())[0] + 1
+                link = "%s:%d" % (file_path, line_num)
+            else:
+                link = '%s:"%s"' % (file_path, self.view.substr(sel))
+        else:
+            cursor = sel.begin()
+            line_raw = self.view.substr(self.view.line(cursor))
+            line_text = line_raw.strip()
+            if not line_text or line_only:
+                line_num = self.view.rowcol(cursor)[0] + 1
+                link = "%s:%d" % (file_path, line_num)
+            else:
+                has_leading = line_raw != line_raw.lstrip()
+                words = line_text.split()[:5]
+                escaped_words = [re.sub(r"([.^$*+?{}[\]\\|()/])", r"\\\1", w) for w in words]
+                escaped = r"\s+".join(escaped_words)
+                prefix = r"^\s*" if has_leading else "^"
+                link = "%s:/%s%s/" % (file_path, prefix, escaped)
+
+        sublime.set_clipboard(link)
+        sublime.status_message("Copied: %s" % link)
+
+
+class CopyTransformedPathCommand(sublime_plugin.TextCommand):
+    """Copy current file path through ``copy_path_transform``. Hidden when unset."""
+
+    def run(self, edit=None) -> None:
+        file_path = self.view.file_name()
+        if not file_path:
+            sublime.status_message("File has no path")
+            return
+        transform = _settings_obj().get("copy_path_transform", "")
+        if not transform:
+            sublime.status_message("copy_path_transform is not configured")
+            return
+        new_path, err = apply_path_transform(file_path, transform)
+        if err is not None:
+            sublime.status_message(err)
+            print("open_url " + err)
+            return
+        sublime.set_clipboard(new_path or "")
+        sublime.status_message("Copied: %s" % new_path)
+
+    def is_visible(self) -> bool:
+        return bool(_settings_obj().get("copy_path_transform", ""))
+
+
+class PasteRelativePathCommand(sublime_plugin.TextCommand):
+    """Paste clipboard path, converted to whichever is shortest of:
+    - relative path from current file (with symlinks resolved on both sides)
+    - tilde-shortened path (~/...)
+    - the absolute expansion as-is
+
+    web URLs (containing ``://``) are pasted as-is. Markdown views auto-wrap
+    pastes in backticks (controlled by ``paste_relative_path_markdown_backticks``).
+    Paths containing spaces are wrapped in double quotes when not in markdown.
+    """
+
+    def run(self, edit) -> None:
+        raw = sublime.get_clipboard().strip()
+        if not raw:
+            return
+
+        if raw.lower().startswith("file://"):
+            raw = strip_file_scheme(raw)
+
+        if "://" in raw:
+            for region in self.view.sel():
+                self.view.replace(edit, region, raw)
+            return
+
+        config = _settings_obj()
+        line_only = config.get("deep_link_line_number_only", False)
+        sep_idx = find_loc_sep(raw, line_number_only=line_only)
+        if sep_idx != -1:
+            path_part = raw[:sep_idx]
+            loc_suffix = raw[sep_idx:]
+        else:
+            path_part = raw
+            loc_suffix = ""
+
+        if (path_part.startswith('"') and path_part.endswith('"')) or (
+            path_part.startswith("'") and path_part.endswith("'")
+        ):
+            path_part = path_part[1:-1]
+
+        expanded_path = os.path.expanduser(os.path.expandvars(path_part))
+
+        current_file = self.view.file_name()
+        if not current_file:
+            for region in self.view.sel():
+                self.view.replace(edit, region, raw)
+            return
+
+        # tilde_path: computed before realpath so symlinked ~/... stays short
+        home = os.path.expanduser("~")
+        if expanded_path.startswith(home + os.sep):
+            tilde_path = "~" + expanded_path[len(home) :]
+        else:
+            tilde_path = expanded_path
+
+        current_dir = os.path.realpath(os.path.dirname(current_file))
+        abs_path = os.path.realpath(expanded_path)
+        try:
+            rel_path = os.path.relpath(abs_path, current_dir)
+        except ValueError:
+            rel_path = abs_path
+
+        try:
+            home_real = os.path.realpath(home)
+            common_ancestor = os.path.commonpath([current_dir, abs_path])
+            if common_ancestor == home_real:
+                result = tilde_path + loc_suffix
+            else:
+                result = min(rel_path, tilde_path, key=len) + loc_suffix
+        except ValueError:
+            result = min(rel_path, tilde_path, key=len) + loc_suffix
+
+        is_markdown = False
+        if config.get("paste_relative_path_markdown_backticks", True):
+            syntax = self.view.settings().get("syntax", "")
+            if syntax and "markdown" in syntax.lower():
+                is_markdown = True
+                result = "`" + result + "`"
+        if not is_markdown and " " in result:
+            result = '"' + result + '"'
+
+        regions = list(self.view.sel())
+        self.view.sel().clear()
+        offset = 0
+        for region in regions:
+            adjusted = sublime.Region(region.begin() + offset, region.end() + offset)
+            self.view.replace(edit, adjusted, result)
+            new_pos = adjusted.begin() + len(result)
+            self.view.sel().add(sublime.Region(new_pos, new_pos))
+            offset += len(result) - region.size()

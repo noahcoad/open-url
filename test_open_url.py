@@ -685,13 +685,199 @@ if "sublime" not in sys.modules:
         def test_empty_line(self):
             self.assertIsNone(self._scan(""))
 
-    @unittest.skip("Skipped until Phase 2 lands SelectUrlCommand and find_selection()")
-    class TestFindSelection(unittest.TestCase):
-        pass
+    # =====================================================================
+    # Phase 2 tests: find_selection, selection, sibling commands
+    # =====================================================================
 
-    @unittest.skip("Skipped until Phase 2 lands the selection() convenience wrapper")
+    def _expand(text, cursor=None, selection=None):
+        """find_selection() result text-stripped — used by table-driven cases."""
+        view = MockView(text)
+        view._window = MockWindow(project_data=None)
+        if selection is not None:
+            view.set_selection(*selection)
+        else:
+            view.set_cursor(cursor or 0)
+        cmd = OpenUrlCommand(view)
+        cmd.config = dict(_DEFAULT_SETTINGS)
+        return view.substr(cmd.find_selection()).strip()
+
+    class TestFindSelection(unittest.TestCase):
+        def test_http_url_full(self):
+            self.assertEqual(_expand("http://example.com", 5), "http://example.com")
+
+        def test_http_url_from_start(self):
+            self.assertEqual(_expand("http://example.com", 0), "http://example.com")
+
+        def test_https_url(self):
+            self.assertEqual(_expand("https://example.com", 5), "https://example.com")
+
+        def test_url_in_sentence(self):
+            self.assertEqual(_expand("visit http://example.com today", 12), "http://example.com")
+
+        def test_url_in_parens(self):
+            self.assertEqual(_expand("(http://example.com)", 5), "http://example.com")
+
+        def test_url_colon_slash_slash_preserved(self):
+            self.assertEqual(_expand("http://example.com", 0), "http://example.com")
+
+        def test_simple_filename(self):
+            self.assertEqual(_expand("file.py", 3), "file.py")
+
+        def test_filename_in_sentence(self):
+            self.assertEqual(_expand("edit file.py now", 7), "file.py")
+
+        def test_tilde_path(self):
+            self.assertEqual(_expand("~/code/project/main.py", 5), "~/code/project/main.py")
+
+        def test_absolute_unix_path(self):
+            self.assertEqual(_expand("/usr/local/bin/python", 5), "/usr/local/bin/python")
+
+        def test_file_with_line_number(self):
+            self.assertEqual(_expand("file.py:42", 3), "file.py:42")
+
+        def test_path_with_line_number(self):
+            self.assertEqual(_expand("src/utils.py:100", 5), "src/utils.py:100")
+
+        def test_cursor_on_line_number(self):
+            self.assertEqual(_expand("file.py:42", 8), "file.py:42")
+
+        def test_file_with_regex_location(self):
+            self.assertEqual(_expand("file.py:/def foo/ next", 3), "file.py:/def foo/")
+
+        def test_regex_with_spaces(self):
+            self.assertEqual(_expand("file.py:/hello world/", 3), "file.py:/hello world/")
+
+        def test_quoted_path_selects_contents(self):
+            text = '"file with spaces.txt"'
+            self.assertEqual(_expand(text, 5), "file with spaces.txt")
+
+        def test_quoted_path_with_line_number(self):
+            text = '"file.py":42'
+            self.assertEqual(_expand(text, 3), '"file.py":42')
+
+        def test_single_quoted_path(self):
+            self.assertEqual(_expand("'file with spaces.txt'", 5), "file with spaces.txt")
+
+        def test_backtick_quoted_path(self):
+            self.assertEqual(_expand("`file with spaces.txt`", 5), "file with spaces.txt")
+
+        def test_does_not_cross_newline_forward(self):
+            text = "line one\nhttp://example.com\nline three"
+            self.assertEqual(_expand(text, 14), "http://example.com")
+
+        def test_does_not_cross_newline_backward(self):
+            text = "line one\nhttp://example.com"
+            self.assertEqual(_expand(text, 9), "http://example.com")
+
+        def test_existing_selection_preserved(self):
+            view = MockView("hello http://example.com world")
+            view._window = MockWindow(project_data=None)
+            view.set_selection(6, 24)
+            cmd = OpenUrlCommand(view)
+            cmd.config = dict(_DEFAULT_SETTINGS)
+            self.assertEqual(view.substr(cmd.find_selection()).strip(), "http://example.com")
+
+        def test_yaml_cases(self):
+            for c in _CASES.get("selection_cases", []):
+                with self.subTest(c["label"]):
+                    self.assertEqual(
+                        _expand(c["text"], cursor=c.get("cursor"), selection=c.get("selection")),
+                        c["expected"],
+                    )
+
     class TestSelectionMethod(unittest.TestCase):
-        pass
+        def test_strips_surrounding_whitespace(self):
+            view = MockView("  http://example.com  ")
+            view._window = MockWindow(project_data=None)
+            view.set_cursor(5)
+            cmd = OpenUrlCommand(view)
+            cmd.config = dict(_DEFAULT_SETTINGS)
+            self.assertEqual(cmd.selection(), "http://example.com")
+
+        def test_returns_string(self):
+            view = MockView("file.py")
+            view._window = MockWindow(project_data=None)
+            cmd = OpenUrlCommand(view)
+            cmd.config = dict(_DEFAULT_SETTINGS)
+            self.assertIsInstance(cmd.selection(), str)
+
+    class TestApplyPathTransform(unittest.TestCase):
+        def test_simple_transform(self):
+            new_path, err = open_url.apply_path_transform("/tmp/x", "echo {path}")
+            self.assertIsNone(err)
+            self.assertEqual(new_path, "/tmp/x")
+
+        def test_quoted_when_path_has_spaces(self):
+            new_path, err = open_url.apply_path_transform("/tmp/with space", "echo {path}")
+            self.assertIsNone(err)
+            self.assertEqual(new_path, "/tmp/with space")
+
+        def test_failed_transform_returns_error(self):
+            new_path, err = open_url.apply_path_transform("/tmp/x", "false")
+            self.assertIsNone(new_path)
+            self.assertIn("failed", err)
+
+    class TestCopyTransformedPathVisibility(unittest.TestCase):
+        def _make_cmd(self, transform):
+            view = MockView()
+            view._file_name = "/tmp/foo.txt"
+            view._window = MockWindow(project_data=None)
+            saved = _mock_sublime.load_settings
+            _mock_sublime.load_settings = lambda name: _MockSettings({"copy_path_transform": transform})
+            try:
+                cmd = open_url.CopyTransformedPathCommand(view)
+                visible = cmd.is_visible()
+            finally:
+                _mock_sublime.load_settings = saved
+            return visible
+
+        def test_hidden_when_unset(self):
+            self.assertFalse(self._make_cmd(""))
+
+        def test_visible_when_set(self):
+            self.assertTrue(self._make_cmd("echo {path}"))
+
+    class TestCopyDeepLinkBuildsLink(unittest.TestCase):
+        """Smoke test the link-building branches without exercising the subprocess path."""
+
+        def _run(self, text, cursor=None, selection=None, line_only=False):
+            view = MockView(text)
+            view._file_name = "/tmp/foo.md"
+            view._window = MockWindow(project_data=None)
+            if selection is not None:
+                view.set_selection(*selection)
+            elif cursor is not None:
+                view.set_cursor(cursor)
+            captured = {}
+            saved_clip = _mock_sublime.set_clipboard
+            saved_settings = _mock_sublime.load_settings
+            _mock_sublime.set_clipboard = lambda x: captured.setdefault("clip", x)
+            _mock_sublime.load_settings = lambda name: _MockSettings(
+                {"copy_path_transform": "", "deep_link_line_number_only": line_only}
+            )
+            try:
+                cmd = open_url.CopyDeepLinkCommand(view)
+                cmd.run()
+            finally:
+                _mock_sublime.set_clipboard = saved_clip
+                _mock_sublime.load_settings = saved_settings
+            return captured.get("clip")
+
+        def test_empty_blank_line_uses_line_number(self):
+            link = self._run("hello\n\nworld", cursor=6)  # cursor on the blank line
+            self.assertEqual(link, "/tmp/foo.md:2")
+
+        def test_empty_non_blank_line_uses_regex(self):
+            link = self._run("hello world\nfoo bar", cursor=0)
+            self.assertTrue(link.startswith("/tmp/foo.md:/^"))
+
+        def test_text_selected_uses_search(self):
+            link = self._run("hello world\nfoo bar", selection=(0, 5))
+            self.assertEqual(link, '/tmp/foo.md:"hello"')
+
+        def test_line_only_collapses_to_line_number(self):
+            link = self._run("hello world\nfoo bar", selection=(0, 5), line_only=True)
+            self.assertEqual(link, "/tmp/foo.md:1")
 
 
 if __name__ == "__main__":

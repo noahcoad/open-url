@@ -32,6 +32,14 @@
   // when true, deep links only support line numbers (file:42), not :"text" or :/regex/
   "deep_link_line_number_only": false,
 
+  // optional shell command run by Copy Deep Link / Copy Transformed Path; {path} is replaced with
+  // the current file's path (shell-quoted), and the command's stdout becomes the new path.
+  // example: "/opt/homebrew/bin/python3 ~/scripts/clipfix.py --input text --output stdout {path}"
+  "copy_path_transform": "",
+
+  // when pasting a relative path into a markdown file, wrap the result in backticks
+  "paste_relative_path_markdown_backticks": true,
+
   // path transforms
   "aliases": {},
 
