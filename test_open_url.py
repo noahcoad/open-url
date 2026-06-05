@@ -988,6 +988,67 @@ if "sublime" not in sys.modules:
             self.assertEqual(captured["args"], ["open", "-R", "/tmp/x"])
             self.assertNotIn("shell", captured["kwargs"])
 
+    # =====================================================================
+    # Phase 4 tests: browser_search shortcut
+    # =====================================================================
+
+    class TestResolveBrowserSearch(unittest.TestCase):
+        def test_substitutes_query(self):
+            url = open_url._resolve_browser_search("hello world", "https://x.com/?q={query}")
+            self.assertEqual(url, "https://x.com/?q=hello%20world")
+
+        def test_special_chars_encoded(self):
+            url = open_url._resolve_browser_search("a&b=c", "https://x.com/?q={query}")
+            self.assertEqual(url, "https://x.com/?q=a%26b%3Dc")
+
+    class TestModifyOrSearchAction(unittest.TestCase):
+        def _make_cmd(self, web_searchers, browser_search):
+            view = MockView()
+            view._window = MockWindow(project_data=None)
+            cmd = OpenUrlCommand(view)
+            cmd.config = dict(_DEFAULT_SETTINGS)
+            cmd.config["web_searchers"] = web_searchers
+            cmd.config["browser_search"] = browser_search
+            captured = {}
+            cmd.open_tab = lambda u: captured.setdefault("opened", u)
+
+            panel = {}
+
+            def fake_panel(opts, on_done, *args, **kwargs):
+                panel["opts"] = opts
+                panel["on_done"] = on_done
+
+            saved = _mock_sublime.active_window
+            _mock_sublime.active_window = lambda: type("W", (), {"show_quick_panel": staticmethod(fake_panel)})
+            try:
+                cmd.modify_or_search_action("foo bar")
+            finally:
+                _mock_sublime.active_window = saved
+            return cmd, captured, panel
+
+        def test_no_searchers_with_browser_search_opens_directly(self):
+            cmd, captured, panel = self._make_cmd([], "https://x.com/?q={query}")
+            self.assertEqual(captured.get("opened"), "https://x.com/?q=foo%20bar")
+            self.assertNotIn("opts", panel)
+
+        def test_no_searchers_no_browser_search_shows_modify_only(self):
+            cmd, captured, panel = self._make_cmd([], "")
+            self.assertEqual(panel["opts"], ["modify path foo bar"])
+            self.assertNotIn("opened", captured)
+
+        def test_searchers_no_browser_search(self):
+            searchers = [{"label": "google", "url": "https://google.com/?q="}]
+            cmd, captured, panel = self._make_cmd(searchers, "")
+            self.assertEqual(panel["opts"], ["modify path foo bar", "google (foo bar)"])
+
+        def test_searchers_with_browser_search_appends_entry(self):
+            searchers = [{"label": "google", "url": "https://google.com/?q="}]
+            cmd, captured, panel = self._make_cmd(searchers, "https://x.com/?q={query}")
+            self.assertEqual(panel["opts"], ["modify path foo bar", "google (foo bar)", "search (foo bar)"])
+            # selecting the last entry hits browser_search
+            panel["on_done"](2)
+            self.assertEqual(captured.get("opened"), "https://x.com/?q=foo%20bar")
+
     class TestCopyDeepLinkBuildsLink(unittest.TestCase):
         """Smoke test the link-building branches without exercising the subprocess path."""
 

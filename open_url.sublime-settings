@@ -40,6 +40,11 @@
   // when pasting a relative path into a markdown file, wrap the result in backticks
   "paste_relative_path_markdown_backticks": true,
 
+  // shortcut search URL used when web_searchers is empty.  {query} is replaced
+  // with URL-encoded text.  When both this and web_searchers are set, this
+  // appears as the last entry in the search panel.
+  "browser_search": "",
+
   // list of regex/extension matchers that pre-select a file or folder action.
   // each entry: { os?, pattern? | endswith?, label, action }
   //   os       — "osx" | "windows" | "linux" (omit = all)

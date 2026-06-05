@@ -34,6 +34,7 @@ Settings = TypedDict(
         "copy_path_transform": str,
         "paste_relative_path_markdown_backticks": bool,
         "autoactions": list,
+        "browser_search": str,
     },
 )
 
@@ -55,6 +56,7 @@ settings_keys = [
     "copy_path_transform",
     "paste_relative_path_markdown_backticks",
     "autoactions",
+    "browser_search",
 ]
 
 # Reserved built-in command names recognized when an opener's "commands" is a string.
@@ -170,6 +172,11 @@ def generate_urls(
                 for suffix in [""] + file_suffixes:
                     urls.append(os.path.join(d, prefix + base + suffix))
     return urls
+
+
+def _resolve_browser_search(term: str, browser_search: str, encoding: str = "utf-8") -> str:
+    """Substitute {query} in a browser_search template with URL-encoded ``term``."""
+    return browser_search.replace("{query}", quote(term.encode(encoding)))
 
 
 def merge_settings(window, keys: list[str]) -> Settings:
@@ -726,28 +733,49 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         threading.Thread(target=ot, args=(url, browser, browser_path)).start()
 
     def modify_or_search_action(self, term: str):
-        """Not a URL and not a local path; prompts user to modify path and looks
-        for it again, or searches for this term using a web searcher.
+        """Not a URL and not a local path; either fall through to a single
+        ``browser_search`` shortcut or show a panel of options.
+
+        Precedence:
+          - web_searchers empty AND browser_search set -> open browser_search directly
+          - web_searchers non-empty -> show panel; if browser_search is also set,
+            it appears as the last entry
         """
-        searchers = self.config["web_searchers"]
+        searchers = self.config.get("web_searchers") or []
+        browser_search = self.config.get("browser_search") or ""
+
+        if not searchers and browser_search:
+            self.open_tab(_resolve_browser_search(term, browser_search))
+            return
+
         opts = [f"modify path {term}"]
         opts += [f'{s["label"]} ({term})' for s in searchers]
-        sublime.active_window().show_quick_panel(opts, lambda idx: self.modify_or_search_done(idx, searchers, term))
+        if browser_search:
+            opts.append(f"search ({term})")
+        sublime.active_window().show_quick_panel(
+            opts,
+            lambda idx: self.modify_or_search_done(idx, searchers, term, browser_search),
+        )
 
-    def modify_or_search_done(self, idx: int, searchers, term: str):
+    def modify_or_search_done(self, idx: int, searchers, term: str, browser_search: str = ""):
         if idx < 0:
             return
         if idx == 0:
             self.view.window().show_input_panel("URL or path:", term, self.url_search_modified, None, None)
             return
-        idx -= 1
-        searcher = searchers[idx]
-        self.open_tab(
-            "{}{}".format(
-                searcher.get("url"),
-                quote(term.encode(searcher.get("encoding", "utf-8"))),
+        searcher_idx = idx - 1
+        if searcher_idx < len(searchers):
+            searcher = searchers[searcher_idx]
+            self.open_tab(
+                "{}{}".format(
+                    searcher.get("url"),
+                    quote(term.encode(searcher.get("encoding", "utf-8"))),
+                )
             )
-        )
+            return
+        # last entry: browser_search shortcut
+        if browser_search:
+            self.open_tab(_resolve_browser_search(term, browser_search))
 
     def url_search_modified(self, text: str):
         """Call open_url again on modified path."""
