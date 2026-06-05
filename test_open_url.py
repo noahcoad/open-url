@@ -14,6 +14,7 @@ until the symbols they reference land in Phase 1+.
 """
 
 import os
+import re
 import sys
 import types
 import unittest
@@ -1048,6 +1049,188 @@ if "sublime" not in sys.modules:
             # selecting the last entry hits browser_search
             panel["on_done"](2)
             self.assertEqual(captured.get("opened"), "https://x.com/?q=foo%20bar")
+
+    # =====================================================================
+    # Phase 5 tests: defaults overhaul
+    # =====================================================================
+
+    def _strip_jsonc(text):
+        """Remove // line comments and trailing commas so json.loads can parse the JSONC settings."""
+        out = []
+        i = 0
+        in_str = False
+        escape = False
+        while i < len(text):
+            c = text[i]
+            if escape:
+                out.append(c)
+                escape = False
+                i += 1
+                continue
+            if in_str:
+                if c == "\\":
+                    escape = True
+                    out.append(c)
+                elif c == '"':
+                    in_str = False
+                    out.append(c)
+                else:
+                    out.append(c)
+                i += 1
+                continue
+            if c == '"':
+                in_str = True
+                out.append(c)
+                i += 1
+                continue
+            # // line comment
+            if c == "/" and i + 1 < len(text) and text[i + 1] == "/":
+                while i < len(text) and text[i] != "\n":
+                    i += 1
+                continue
+            out.append(c)
+            i += 1
+        cleaned = "".join(out)
+        # remove trailing commas before } or ]
+        cleaned = re.sub(r",(\s*[}\]])", r"\1", cleaned)
+        return cleaned
+
+    def _load_default_settings():
+        import json
+
+        path = os.path.join(_here, "open_url.sublime-settings")
+        with open(path) as f:
+            text = f.read()
+        return json.loads(_strip_jsonc(text))
+
+    class TestDefaultSettings(unittest.TestCase):
+        def setUp(self):
+            self.defaults = _load_default_settings()
+
+        def test_loads_without_error(self):
+            self.assertIsInstance(self.defaults, dict)
+
+        def test_every_existing_key_preserved(self):
+            for key in (
+                "delimiters",
+                "trailing_delimiters",
+                "web_browser",
+                "web_browser_path",
+                "web_searchers",
+                "aliases",
+                "search_paths",
+                "file_prefixes",
+                "file_suffixes",
+                "file_custom_commands",
+                "folder_custom_commands",
+                "other_custom_commands",
+            ):
+                self.assertIn(key, self.defaults, f"setting {key} should still be present")
+
+        def test_file_menu_labels_match_v2_feel(self):
+            labels = [o["label"] for o in self.defaults["file_custom_commands"]]
+            for expected in ("edit", "run", "reveal", "open in new window", "system open"):
+                self.assertIn(expected, labels)
+
+        def test_folder_menu_labels_match_v2_feel(self):
+            labels = [o["label"] for o in self.defaults["folder_custom_commands"]]
+            for expected in ("open in new window", "reveal", "add to project"):
+                self.assertIn(expected, labels)
+
+        def test_browser_search_default_set(self):
+            self.assertIn("{query}", self.defaults["browser_search"])
+
+        def test_autoactions_present(self):
+            autoactions = self.defaults.get("autoactions", [])
+            # txt/md auto-edit anywhere
+            md_entry = next(
+                (a for a in autoactions if "endswith" in a and ".md" in a["endswith"]),
+                None,
+            )
+            self.assertIsNotNone(md_entry)
+            self.assertEqual(md_entry["label"], "edit")
+            self.assertEqual(md_entry["action"], "auto")
+            # windows .exe auto-run
+            exe_entry = next(
+                (a for a in autoactions if "endswith" in a and ".exe" in a["endswith"]),
+                None,
+            )
+            self.assertIsNotNone(exe_entry)
+            self.assertEqual(exe_entry["os"], "windows")
+            self.assertEqual(exe_entry["action"], "auto")
+
+        def test_sentinel_commands_used_in_defaults(self):
+            file_cmds = self.defaults["file_custom_commands"]
+            sentinels = {o["commands"] for o in file_cmds if isinstance(o.get("commands"), str)}
+            self.assertIn("edit_in_sublime", sentinels)
+            self.assertIn("system_open", sentinels)
+            self.assertIn("open_in_new_window", sentinels)
+
+            folder_cmds = self.defaults["folder_custom_commands"]
+            folder_sentinels = {o["commands"] for o in folder_cmds if isinstance(o.get("commands"), str)}
+            self.assertIn("open_in_new_window", folder_sentinels)
+            self.assertIn("add_to_project", folder_sentinels)
+
+        def test_file_suffixes_default_preserved(self):
+            self.assertIn(".js", self.defaults["file_suffixes"])
+
+    class TestDefaultAutoactionsBehavior(unittest.TestCase):
+        """End-to-end: shipped defaults make .txt/.md auto-edit, etc."""
+
+        def setUp(self):
+            self.defaults = _load_default_settings()
+
+        def test_md_auto_edits_on_macos(self):
+            saved = _mock_sublime.platform
+            _mock_sublime.platform = lambda: "osx"
+            try:
+                openers = match_openers(self.defaults["file_custom_commands"], "/tmp/x.md")
+                synthetic = [{"label": "edit"}, *openers]
+                idx, mode = open_url.select_default_opener(self.defaults["autoactions"], synthetic, "/tmp/x.md")
+                self.assertEqual(mode, "auto")
+                self.assertEqual(synthetic[idx]["label"], "edit")
+            finally:
+                _mock_sublime.platform = saved
+
+        def test_exe_auto_runs_on_windows(self):
+            saved = _mock_sublime.platform
+            _mock_sublime.platform = lambda: "windows"
+            try:
+                openers = match_openers(self.defaults["file_custom_commands"], "/tmp/x.exe")
+                synthetic = [{"label": "edit"}, *openers]
+                idx, mode = open_url.select_default_opener(self.defaults["autoactions"], synthetic, "/tmp/x.exe")
+                self.assertEqual(mode, "auto")
+                self.assertEqual(synthetic[idx]["label"], "run")
+            finally:
+                _mock_sublime.platform = saved
+
+        def test_random_extension_falls_through(self):
+            saved = _mock_sublime.platform
+            _mock_sublime.platform = lambda: "osx"
+            try:
+                openers = match_openers(self.defaults["file_custom_commands"], "/tmp/x.zzznottld")
+                synthetic = [{"label": "edit"}, *openers]
+                idx, mode = open_url.select_default_opener(
+                    self.defaults["autoactions"], synthetic, "/tmp/x.zzznottld"
+                )
+                self.assertEqual(mode, "none")
+            finally:
+                _mock_sublime.platform = saved
+
+    class TestUserOverrideReplacesDefaults(unittest.TestCase):
+        """Regression: user setting in load_settings cleanly replaces a default list."""
+
+        def test_project_replaces_defaults(self):
+            # merge_settings reads from sublime.load_settings (user-merged) and then layers project on top.
+            data = {"file_custom_commands": [{"label": "ONLY", "commands": ["echo"]}]}
+            saved = _mock_sublime.load_settings
+            _mock_sublime.load_settings = lambda name: _MockSettings(data)
+            try:
+                result = merge_settings(MockWindow(project_data=None), ["file_custom_commands"])
+                self.assertEqual(len(result["file_custom_commands"]), 1)
+                self.assertEqual(result["file_custom_commands"][0]["label"], "ONLY")
+            finally:
+                _mock_sublime.load_settings = saved
 
     class TestCopyDeepLinkBuildsLink(unittest.TestCase):
         """Smoke test the link-building branches without exercising the subprocess path."""

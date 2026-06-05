@@ -20,6 +20,11 @@
   // example: chrome, linux
   // "web_browser_path": "/usr/bin/google-chrome %s"
 
+  // shortcut search URL used when web_searchers is empty.  {query} is replaced
+  // with URL-encoded text.  When both this and web_searchers are set, this
+  // appears as the last entry in the search panel.
+  "browser_search": "https://www.google.com/search?q={query}",
+
   // if URL is neither a local file nor a web URL, pass it to a web searcher
   "web_searchers": [
     {
@@ -40,33 +45,8 @@
   // when pasting a relative path into a markdown file, wrap the result in backticks
   "paste_relative_path_markdown_backticks": true,
 
-  // shortcut search URL used when web_searchers is empty.  {query} is replaced
-  // with URL-encoded text.  When both this and web_searchers are set, this
-  // appears as the last entry in the search panel.
-  "browser_search": "",
-
-  // list of regex/extension matchers that pre-select a file or folder action.
-  // each entry: { os?, pattern? | endswith?, label, action }
-  //   os       — "osx" | "windows" | "linux" (omit = all)
-  //   pattern  — regex; matches against the resolved path
-  //   endswith — array of extensions (e.g. [".sh"]); shorthand for pattern
-  //   label    — matches a label in *_custom_commands; or a built-in:
-  //              "edit", "reveal", "open in new window", "system open", "add to project"
-  //   action   — "auto" (skip menu) | "menu" (pre-highlight)
-  // example:
-  //   { "os": "windows", "endswith": [".exe"], "label": "run", "action": "auto" }
-  "autoactions": [],
-
-  // Per-opener fields recognized in *_custom_commands entries (in addition to
-  // label, os, pattern, commands, kwargs):
-  //   terminal     — true to run the command in a terminal window (xterm/cmd.exe)
-  //   pause        — true to pause after the command exits (with terminal)
-  //   pre_command  — string prepended to commands (e.g. "sh" for "sh script.sh")
-  // The "commands" field may also be a reserved sentinel string dispatched
-  // in-process: "edit_in_sublime", "open_in_new_window", "system_open",
-  // "add_to_project".
-
-  // path transforms
+  // path transforms — applied in order: aliases → search_paths × file_prefixes × file_suffixes
+  // first combination that resolves to an existing file or folder wins.
   "aliases": {},
 
   "search_paths": ["src"],
@@ -75,42 +55,46 @@
 
   "file_suffixes": [".js"],
 
-  // pass file that matches regex "pattern" to shell commands
+  // menu actions shown when the resolved path is a file.
+  // each entry: { label, os?, pattern?, commands, kwargs?, terminal?, pause?, pre_command? }
+  // the "commands" field accepts:
+  //   - an array (argv; the path is appended unless an element contains "$url")
+  //   - a string (run via shell; "$url" replaced or path appended)
+  //   - a reserved sentinel: "edit_in_sublime", "open_in_new_window", "system_open", "add_to_project"
   "file_custom_commands": [
-    { "label": "reveal", "os": "osx", "commands": ["open", "-R"] },
-    {
-      "label": "open with default application",
-      "os": "osx",
-      "commands": ["open"]
-    },
-
-    {
-      "label": "reveal",
-      "os": "windows",
-      "commands": ["explorer", "/select,"]
-    },
-    {
-      "label": "open with default application",
-      "os": "windows",
-      "commands": ["start"],
-      "kwargs": { "shell": true }
-    },
-
-    { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
-    { "label": "open with default application", "os": "linux", "commands": [] }
+    { "label": "edit",                "commands": "edit_in_sublime" },
+    { "label": "run",                 "commands": "system_open" },
+    { "label": "reveal", "os": "osx",     "commands": ["open", "-R"] },
+    { "label": "reveal", "os": "windows", "commands": ["explorer", "/select,"] },
+    { "label": "reveal", "os": "linux",   "commands": ["nautilus", "--browser"] },
+    { "label": "open in new window",  "commands": "open_in_new_window" },
+    { "label": "system open",         "commands": "system_open" }
   ],
 
-  // pass folder that matches regex "pattern" to shell commands
+  // menu actions shown when the resolved path is a folder
   "folder_custom_commands": [
-    { "label": "reveal", "os": "osx", "commands": ["open"] },
-
+    { "label": "open in new window",  "commands": "open_in_new_window" },
+    { "label": "reveal", "os": "osx",     "commands": ["open"] },
     { "label": "reveal", "os": "windows", "commands": ["explorer"] },
-
-    { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
-    {
-      "label": "open in new window",
-      "os": "osx",
-      "commands": ["/usr/local/bin/subl"]
-    }
+    { "label": "reveal", "os": "linux",   "commands": ["nautilus", "--browser"] },
+    { "label": "add to project",      "commands": "add_to_project" }
   ],
+
+  // menu actions for non-file/non-folder text that doesn't look like a URL
+  "other_custom_commands": [],
+
+  // list of regex/extension matchers that pre-select a file or folder action.
+  // each entry: { os?, pattern? | endswith?, label, action }
+  //   os       — "osx" | "windows" | "linux" (omit = all)
+  //   pattern  — regex; matches against the resolved path
+  //   endswith — array of extensions (e.g. [".sh"]); shorthand for pattern
+  //   label    — matches a label in *_custom_commands; or a built-in name
+  //   action   — "auto" (skip menu) | "menu" (pre-highlight)
+  "autoactions": [
+    { "os": "windows", "endswith": [".exe", ".com"], "label": "run",  "action": "auto" },
+    { "os": "windows", "endswith": [".bat", ".cmd"], "label": "run",  "action": "menu" },
+    { "endswith": [".sublime-project"],              "label": "edit", "action": "auto" },
+    { "endswith": [".txt", ".md", ".log", ".config", ".sublime-settings"],
+      "label": "edit", "action": "auto" }
+  ]
 }
