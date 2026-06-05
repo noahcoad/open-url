@@ -682,10 +682,27 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             return
 
     def _open_in_new_window(self, path: str) -> None:
-        # Spawn a fresh Sublime window pointed at this path. Uses the running
-        # executable so users get the same ST flavor (build) they invoked from.
+        """Open ``path`` in a Sublime window using the running ST instance.
+
+        On macOS the GUI binary at executable_path() doesn't fully load folders
+        through the project machinery (so on_load_project_async listeners may
+        not fire), and shelling out to ``subl`` from PATH risks launching a
+        different ST build. We rewrite executable_path() to the bundled
+        SharedSupport/bin/subl so the same running instance handles the open
+        with full project events. (Ported from v2.)
+        """
         executable = sublime.executable_path()
-        threading.Thread(target=lambda: subprocess.Popen([executable, "-n", path])).start()
+        if sublime.platform() == "osx":
+            app_path = executable[: executable.rfind(".app/") + 5]
+            executable = app_path + "Contents/SharedSupport/bin/subl"
+
+        path = os.path.abspath(path)
+        args = [executable]
+        if os.path.isfile(path):
+            args.append(os.path.dirname(path))
+        args.append(path)
+        cwd = args[1] if os.path.isfile(path) else path
+        subprocess.Popen(args, cwd=cwd)
 
     def _system_open(self, path: str) -> None:
         platform = sublime.platform()

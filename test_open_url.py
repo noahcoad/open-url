@@ -935,6 +935,73 @@ if "sublime" not in sys.modules:
             cmd.prepare_args_and_run({"commands": "open_in_new_window"}, "/tmp/x")
             self.assertEqual(calls.get("new_window"), "/tmp/x")
 
+        def test_open_in_new_window_uses_bundled_subl_on_macos(self):
+            """Regression: must use SharedSupport/bin/subl on macOS so the
+            running ST instance handles the open with full project events
+            (so listeners like AutoOpenNotes fire reliably)."""
+            saved_platform = _mock_sublime.platform
+            saved_exe = _mock_sublime.executable_path
+            _mock_sublime.platform = lambda: "osx"
+            _mock_sublime.executable_path = lambda: "/Applications/Sublime Text.app/Contents/MacOS/sublime_text"
+
+            captured = {}
+
+            class FakePopen:
+                def __init__(self, args, **kwargs):
+                    captured["args"] = args
+                    captured["kwargs"] = kwargs
+
+            saved_popen = open_url.subprocess.Popen
+            open_url.subprocess.Popen = FakePopen
+            try:
+                view = MockView()
+                view._window = MockWindow(project_data=None)
+                cmd = OpenUrlCommand(view)
+                cmd.config = dict(_DEFAULT_SETTINGS)
+                cmd._open_in_new_window("/tmp/some_folder")
+                self.assertEqual(
+                    captured["args"][0],
+                    "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl",
+                )
+                self.assertNotIn("-n", captured["args"])
+            finally:
+                _mock_sublime.platform = saved_platform
+                _mock_sublime.executable_path = saved_exe
+                open_url.subprocess.Popen = saved_popen
+
+        def test_open_in_new_window_for_file_passes_parent_dir(self):
+            """When opening a file, the parent dir is passed so it becomes the
+            project root and the file opens as a tab inside it."""
+            saved_platform = _mock_sublime.platform
+            saved_exe = _mock_sublime.executable_path
+            _mock_sublime.platform = lambda: "osx"
+            _mock_sublime.executable_path = lambda: "/Applications/Sublime Text.app/Contents/MacOS/sublime_text"
+
+            captured = {}
+
+            class FakePopen:
+                def __init__(self, args, **kwargs):
+                    captured["args"] = args
+                    captured["kwargs"] = kwargs
+
+            saved_popen = open_url.subprocess.Popen
+            open_url.subprocess.Popen = FakePopen
+            try:
+                view = MockView()
+                view._window = MockWindow(project_data=None)
+                cmd = OpenUrlCommand(view)
+                cmd.config = dict(_DEFAULT_SETTINGS)
+                cmd._open_in_new_window(os.path.abspath(__file__))
+                # args = [subl, parent_dir, file]
+                self.assertEqual(len(captured["args"]), 3)
+                self.assertEqual(captured["args"][1], os.path.dirname(os.path.abspath(__file__)))
+                self.assertEqual(captured["args"][2], os.path.abspath(__file__))
+                self.assertEqual(captured["kwargs"]["cwd"], os.path.dirname(os.path.abspath(__file__)))
+            finally:
+                _mock_sublime.platform = saved_platform
+                _mock_sublime.executable_path = saved_exe
+                open_url.subprocess.Popen = saved_popen
+
         def test_sentinel_system_open(self):
             cmd, captured, calls = self._make_cmd()
             cmd.prepare_args_and_run({"commands": "system_open"}, "/tmp/x")
