@@ -29,6 +29,9 @@
     }
   ],
 
+  // when true, deep links only support line numbers (file:42), not :"text" or :/regex/
+  "deep_link_line_number_only": false,
+
   // path transforms
   "aliases": {},
 

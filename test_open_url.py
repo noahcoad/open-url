@@ -124,6 +124,9 @@ if "sublime" not in sys.modules:
     remove_trailing_delimiters = open_url.remove_trailing_delimiters
     prepend_scheme = open_url.prepend_scheme
     settings_keys = open_url.settings_keys
+    strip_file_scheme = open_url.strip_file_scheme
+    find_loc_sep = open_url.find_loc_sep
+    parse_file_location = open_url.parse_file_location
 
     # ---- MockView (subset of sublime.View used by command code) ----
 
@@ -198,6 +201,18 @@ if "sublime" not in sys.modules:
 
         def set_project_data(self, data):
             self._project_data = data
+
+    # ---- YAML test cases (optional; tests degrade gracefully if pyyaml absent) ----
+    _CASES = {}
+    try:
+        import yaml as _yaml
+
+        _cases_path = os.path.join(_here, "test_cases.yaml")
+        if os.path.exists(_cases_path):
+            with open(_cases_path) as _f:
+                _CASES = _yaml.safe_load(_f) or {}
+    except ImportError:
+        pass
 
     # =====================================================================
     # v1-surface tests (Phase 0): cover existing master functions
@@ -429,41 +444,252 @@ if "sublime" not in sys.modules:
             self.assertEqual(prepend_scheme("https://example.com"), "https://example.com")
 
     # =====================================================================
-    # v2-surface tests (Phase 1+ symbols): skipped until those land
+    # Phase 1 tests: deep-link parsing, file-scheme stripping, line-start scan
     # =====================================================================
 
-    _PHASE1_PENDING = "Skipped until Phase 1 lands deep-link parsing helpers"
-    _PHASE2_PENDING = "Skipped until Phase 2 lands sibling commands"
-
-    @unittest.skip(_PHASE1_PENDING)
     class TestFindLocSep(unittest.TestCase):
-        pass
+        def test_line_number_basic(self):
+            self.assertEqual(find_loc_sep("file.py:42"), 7)
 
-    @unittest.skip(_PHASE1_PENDING)
+        def test_line_number_path(self):
+            self.assertEqual(find_loc_sep("src/utils.py:15"), 12)
+
+        def test_line_number_absolute_path(self):
+            self.assertEqual(find_loc_sep("/home/user/file.py:99"), 18)
+
+        def test_quoted_search_string(self):
+            self.assertEqual(find_loc_sep('file.py:"search text"'), 7)
+
+        def test_regex_location(self):
+            self.assertEqual(find_loc_sep("file.py:/pattern/"), 7)
+
+        def test_no_separator(self):
+            self.assertEqual(find_loc_sep("file.py"), -1)
+
+        def test_empty_string(self):
+            self.assertEqual(find_loc_sep(""), -1)
+
+        def test_colon_at_end(self):
+            self.assertEqual(find_loc_sep("file:"), -1)
+
+        def test_colon_followed_by_letter(self):
+            self.assertEqual(find_loc_sep("file:xyz"), -1)
+
+        def test_http_url_not_matched(self):
+            self.assertEqual(find_loc_sep("http://example.com"), -1)
+
+        def test_https_url_not_matched(self):
+            self.assertEqual(find_loc_sep("https://example.com/path"), -1)
+
+        def test_colon_double_slash_not_matched(self):
+            self.assertEqual(find_loc_sep("file.py://something"), -1)
+
+        def test_line_number_only_finds_line(self):
+            self.assertEqual(find_loc_sep("file.py:100", line_number_only=True), 7)
+
+        def test_line_number_only_skips_search(self):
+            self.assertEqual(find_loc_sep('file.py:"text"', line_number_only=True), -1)
+
+        def test_line_number_only_skips_regex(self):
+            self.assertEqual(find_loc_sep("file.py:/pat/", line_number_only=True), -1)
+
+        def test_returns_last_valid_colon(self):
+            self.assertEqual(find_loc_sep("a:b:42"), 3)
+
+        def test_yaml_cases(self):
+            for c in _CASES.get("loc_sep_cases", []):
+                with self.subTest(c["label"]):
+                    self.assertEqual(
+                        find_loc_sep(c["text"], line_number_only=c.get("line_number_only", False)),
+                        c["expected"],
+                    )
+
     class TestParseFileLocation(unittest.TestCase):
-        pass
+        def test_plain_filename(self):
+            path, loc = parse_file_location("file.py")
+            self.assertEqual(path, "file.py")
+            self.assertIsNone(loc)
 
-    @unittest.skip(_PHASE1_PENDING)
+        def test_path_no_location(self):
+            path, loc = parse_file_location("src/module/file.py")
+            self.assertEqual(path, "src/module/file.py")
+            self.assertIsNone(loc)
+
+        def test_line_number(self):
+            path, loc = parse_file_location("file.py:42")
+            self.assertEqual(path, "file.py")
+            self.assertEqual(loc, {"type": "line", "value": 42})
+
+        def test_line_number_no_extension(self):
+            path, loc = parse_file_location("Makefile:5")
+            self.assertEqual(path, "Makefile")
+            self.assertEqual(loc, {"type": "line", "value": 5})
+
+        def test_line_number_absolute_path(self):
+            path, loc = parse_file_location("/home/user/notes.txt:7")
+            self.assertEqual(path, "/home/user/notes.txt")
+            self.assertEqual(loc, {"type": "line", "value": 7})
+
+        def test_search_string(self):
+            path, loc = parse_file_location('file.py:"hello world"')
+            self.assertEqual(path, "file.py")
+            self.assertEqual(loc, {"type": "search", "value": "hello world"})
+
+        def test_regex_location(self):
+            path, loc = parse_file_location("file.py:/def foo/")
+            self.assertEqual(path, "file.py")
+            self.assertEqual(loc, {"type": "regex", "value": "def foo"})
+
+        def test_https_url_not_split(self):
+            path, loc = parse_file_location("https://example.com/path")
+            self.assertEqual(path, "https://example.com/path")
+            self.assertIsNone(loc)
+
+        def test_quoted_path_with_line_number(self):
+            path, loc = parse_file_location('"file with spaces.py":10')
+            self.assertEqual(path, "file with spaces.py")
+            self.assertEqual(loc, {"type": "line", "value": 10})
+
+        def test_malformed_returns_original(self):
+            path, loc = parse_file_location("file.py:xyz")
+            self.assertEqual(path, "file.py:xyz")
+            self.assertIsNone(loc)
+
+        def test_line_number_only_skips_search(self):
+            path, loc = parse_file_location('file.py:"text"', line_number_only=True)
+            # No valid sep when restricted to digits → returned unchanged
+            self.assertEqual(path, 'file.py:"text"')
+            self.assertIsNone(loc)
+
+        def test_yaml_cases(self):
+            for c in _CASES.get("parse_cases", []):
+                with self.subTest(c["label"]):
+                    path, loc = parse_file_location(c["input"])
+                    self.assertEqual(path, c["path"])
+                    if "loc_type" in c:
+                        self.assertIsNotNone(loc)
+                        self.assertEqual(loc["type"], c["loc_type"])
+                        self.assertEqual(loc["value"], c["loc_value"])
+                    else:
+                        self.assertIsNone(loc)
+
     class TestStripFileScheme(unittest.TestCase):
-        pass
+        def test_no_scheme_unchanged(self):
+            self.assertEqual(strip_file_scheme("~/foo/bar"), "~/foo/bar")
 
-    @unittest.skip(_PHASE1_PENDING)
-    class TestFileSchemeIntegration(unittest.TestCase):
-        pass
+        def test_empty_string(self):
+            self.assertEqual(strip_file_scheme(""), "")
 
-    @unittest.skip(_PHASE1_PENDING)
+        def test_tilde_path(self):
+            self.assertEqual(strip_file_scheme("file://~/.kiro/agents/coder.md"), "~/.kiro/agents/coder.md")
+
+        def test_absolute_three_slashes(self):
+            self.assertEqual(strip_file_scheme("file:///Users/me/x.txt"), "/Users/me/x.txt")
+
+        def test_localhost(self):
+            self.assertEqual(strip_file_scheme("file://localhost/Users/me/x.txt"), "/Users/me/x.txt")
+
+        def test_relative(self):
+            self.assertEqual(strip_file_scheme("file://relative/path"), "relative/path")
+
+        def test_uppercase_scheme(self):
+            self.assertEqual(strip_file_scheme("FILE://~/x"), "~/x")
+
+        def test_percent_encoded(self):
+            self.assertEqual(strip_file_scheme("file:///Users/me/hello%20world.txt"), "/Users/me/hello world.txt")
+
+        def test_http_unchanged(self):
+            self.assertEqual(strip_file_scheme("http://example.com"), "http://example.com")
+
     class TestIsResolvable(unittest.TestCase):
-        pass
+        def setUp(self):
+            view = MockView("")
+            view._window = MockWindow(project_data=None)
+            self.cmd = OpenUrlCommand(view)
+            self.cmd.config = dict(_DEFAULT_SETTINGS)
 
-    @unittest.skip(_PHASE1_PENDING)
+        def test_https_url(self):
+            self.assertTrue(self.cmd._is_resolvable("https://example.com"))
+
+        def test_http_url(self):
+            self.assertTrue(self.cmd._is_resolvable("http://example.com/path"))
+
+        def test_url_with_path(self):
+            self.assertTrue(self.cmd._is_resolvable("https://claude.ai/chat/abc-123"))
+
+        def test_bare_domain(self):
+            self.assertTrue(self.cmd._is_resolvable("google.com"))
+
+        def test_domain_with_path(self):
+            self.assertTrue(self.cmd._is_resolvable("coad.net/noah"))
+
+        def test_empty_string(self):
+            self.assertFalse(self.cmd._is_resolvable(""))
+
+        def test_none(self):
+            self.assertFalse(self.cmd._is_resolvable(None))
+
+        def test_plain_word(self):
+            self.assertFalse(self.cmd._is_resolvable("hello"))
+
+        def test_label_with_comma(self):
+            self.assertFalse(self.cmd._is_resolvable("Analysis,"))
+
+        def test_existing_file(self):
+            self.assertTrue(self.cmd._is_resolvable(os.path.abspath(__file__)))
+
+        def test_nonexistent_path(self):
+            self.assertFalse(self.cmd._is_resolvable("/nonexistent/path/file.zzznottld"))
+
+        def test_file_uri_to_existing_file(self):
+            uri = "file://" + os.path.abspath(__file__)
+            self.assertTrue(self.cmd._is_resolvable(uri))
+
+        def test_file_uri_nonexistent(self):
+            self.assertFalse(self.cmd._is_resolvable("file:///nonexistent/path/x.zzznottld"))
+
     class TestScanLineForUrl(unittest.TestCase):
-        pass
+        def _scan(self, text, col=0):
+            view = MockView(text)
+            view._window = MockWindow(project_data=None)
+            view.set_cursor(col)
+            cmd = OpenUrlCommand(view)
+            cmd.config = dict(_DEFAULT_SETTINGS)
+            return cmd._scan_line_for_url(col)
 
-    @unittest.skip(_PHASE2_PENDING)
+        def test_url_after_label(self):
+            self.assertEqual(
+                self._scan("Dream Analysis, https://claude.ai/chat/abc"),
+                "https://claude.ai/chat/abc",
+            )
+
+        def test_url_only(self):
+            self.assertEqual(self._scan("https://example.com/path"), "https://example.com/path")
+
+        def test_no_url_returns_none(self):
+            self.assertIsNone(self._scan("just some words no url here"))
+
+        def test_url_in_comment(self):
+            self.assertEqual(self._scan("# see https://example.com for docs"), "https://example.com")
+
+        def test_bare_domain_after_text(self):
+            self.assertEqual(self._scan("visit google.com today"), "google.com")
+
+        def test_url_mid_line(self):
+            self.assertEqual(self._scan("label: https://example.com more text"), "https://example.com")
+
+        def test_scan_from_mid_line_skips_earlier(self):
+            text = "https://first.com word https://second.com"
+            self.assertEqual(self._scan(text, col=18), "https://second.com")
+
+        def test_empty_line(self):
+            self.assertIsNone(self._scan(""))
+
+    @unittest.skip("Skipped until Phase 2 lands SelectUrlCommand and find_selection()")
     class TestFindSelection(unittest.TestCase):
         pass
 
-    @unittest.skip(_PHASE2_PENDING)
+    @unittest.skip("Skipped until Phase 2 lands the selection() convenience wrapper")
     class TestSelectionMethod(unittest.TestCase):
         pass
 
