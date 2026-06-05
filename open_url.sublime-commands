@@ -1,13 +1,4 @@
 [
-  {
-    "caption": "Open URL: Settings",
-    "command": "edit_settings",
-    "args": {
-      "base_file": "${packages}/Open URL/open_url.sublime-settings",
-      "default": "// settings in here override those in \"Open URL/open_url.sublime-settings\",\n\n{\n\t$0\n}\n"
-    }
-  },
-
   { "caption": "Open URL", "command": "open_url" },
 
   {
