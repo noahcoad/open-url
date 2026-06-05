@@ -1195,8 +1195,10 @@ if "sublime" not in sys.modules:
                 self.assertIn(key, self.defaults, f"setting {key} should still be present")
 
         def test_file_menu_labels_match_v2_feel(self):
+            # "edit" is synthesized at runtime by file_action, so it must NOT appear in defaults.
             labels = [o["label"] for o in self.defaults["file_custom_commands"]]
-            for expected in ("edit", "run", "reveal", "open in new window", "system open"):
+            self.assertNotIn("edit", labels)
+            for expected in ("run", "reveal", "open in new window", "system open"):
                 self.assertIn(expected, labels)
 
         def test_folder_menu_labels_match_v2_feel(self):
@@ -1229,7 +1231,8 @@ if "sublime" not in sys.modules:
         def test_sentinel_commands_used_in_defaults(self):
             file_cmds = self.defaults["file_custom_commands"]
             sentinels = {o["commands"] for o in file_cmds if isinstance(o.get("commands"), str)}
-            self.assertIn("edit_in_sublime", sentinels)
+            # edit_in_sublime is reachable via the synthesized "edit" entry, so it's not in
+            # the explicit defaults — but system_open and open_in_new_window must be.
             self.assertIn("system_open", sentinels)
             self.assertIn("open_in_new_window", sentinels)
 

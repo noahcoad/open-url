@@ -61,8 +61,10 @@
   //   - an array (argv; the path is appended unless an element contains "$url")
   //   - a string (run via shell; "$url" replaced or path appended)
   //   - a reserved sentinel: "edit_in_sublime", "open_in_new_window", "system_open", "add_to_project"
+  // Note: a synthetic "edit" entry is always prepended to this list at runtime,
+  // which opens the file in Sublime (honoring any deep-link suffix). No need to
+  // include it here.
   "file_custom_commands": [
-    { "label": "edit",                "commands": "edit_in_sublime" },
     { "label": "run",                 "commands": "system_open" },
     { "label": "reveal", "os": "osx",     "commands": ["open", "-R"] },
     { "label": "reveal", "os": "windows", "commands": ["explorer", "/select,"] },
