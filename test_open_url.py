@@ -837,6 +837,157 @@ if "sublime" not in sys.modules:
         def test_visible_when_set(self):
             self.assertTrue(self._make_cmd("echo {path}"))
 
+    # =====================================================================
+    # Phase 3 tests: autoactions + sentinel commands + opener fields
+    # =====================================================================
+
+    class TestSelectDefaultOpener(unittest.TestCase):
+        def setUp(self):
+            self._saved = _mock_sublime.platform
+            _mock_sublime.platform = lambda: "osx"
+
+        def tearDown(self):
+            _mock_sublime.platform = self._saved
+
+        def test_no_autoactions_returns_none(self):
+            idx, mode = open_url.select_default_opener([], [{"label": "edit"}], "x.txt")
+            self.assertEqual(mode, "none")
+            self.assertIsNone(idx)
+
+        def test_endswith_matches(self):
+            autoactions = [{"endswith": [".txt"], "label": "edit", "action": "auto"}]
+            openers = [{"label": "edit"}, {"label": "run"}]
+            idx, mode = open_url.select_default_opener(autoactions, openers, "x.txt")
+            self.assertEqual((idx, mode), (0, "auto"))
+
+        def test_pattern_matches(self):
+            autoactions = [{"pattern": r"\.py$", "label": "run", "action": "menu"}]
+            openers = [{"label": "edit"}, {"label": "run"}]
+            idx, mode = open_url.select_default_opener(autoactions, openers, "main.py")
+            self.assertEqual((idx, mode), (1, "menu"))
+
+        def test_pattern_overrides_endswith(self):
+            autoactions = [{"pattern": r"\.py$", "endswith": [".txt"], "label": "run", "action": "auto"}]
+            openers = [{"label": "edit"}, {"label": "run"}]
+            idx, mode = open_url.select_default_opener(autoactions, openers, "main.txt")
+            self.assertEqual(mode, "none")  # pattern overrides; pattern doesn't match .txt
+            idx, mode = open_url.select_default_opener(autoactions, openers, "main.py")
+            self.assertEqual((idx, mode), (1, "auto"))
+
+        def test_os_filter_excludes(self):
+            autoactions = [{"os": "windows", "endswith": [".exe"], "label": "run", "action": "auto"}]
+            openers = [{"label": "run"}]
+            idx, mode = open_url.select_default_opener(autoactions, openers, "x.exe")
+            self.assertEqual(mode, "none")  # current platform is osx
+
+        def test_os_filter_includes(self):
+            _mock_sublime.platform = lambda: "windows"
+            autoactions = [{"os": "windows", "endswith": [".exe"], "label": "run", "action": "auto"}]
+            openers = [{"label": "run"}]
+            idx, mode = open_url.select_default_opener(autoactions, openers, "x.exe")
+            self.assertEqual((idx, mode), (0, "auto"))
+
+        def test_invalid_action_skipped(self):
+            autoactions = [{"endswith": [".txt"], "label": "edit", "action": "bogus"}]
+            openers = [{"label": "edit"}]
+            idx, mode = open_url.select_default_opener(autoactions, openers, "x.txt")
+            self.assertEqual(mode, "none")
+
+        def test_label_not_in_openers_returns_none(self):
+            autoactions = [{"endswith": [".txt"], "label": "ghost", "action": "auto"}]
+            openers = [{"label": "edit"}]
+            idx, mode = open_url.select_default_opener(autoactions, openers, "x.txt")
+            self.assertEqual(mode, "none")
+
+    class TestPrepareArgsBuiltinAndExtras(unittest.TestCase):
+        """prepare_args_and_run: sentinel dispatch + terminal/pause/pre_command."""
+
+        def _make_cmd(self):
+            view = MockView()
+            view._window = MockWindow(project_data=None)
+            cmd = OpenUrlCommand(view)
+            cmd.config = dict(_DEFAULT_SETTINGS)
+            captured = {}
+
+            def fake_run(args, kwargs):
+                captured["args"] = args
+                captured["kwargs"] = kwargs
+
+            cmd.run_subprocess = fake_run
+
+            # also stub builtin dispatchers
+            calls = {}
+            cmd._open_in_new_window = lambda p: calls.setdefault("new_window", p)
+            cmd._system_open = lambda p: calls.setdefault("system_open", p)
+            cmd._add_to_project = lambda p: calls.setdefault("add_to_project", p)
+            cmd.open_file_at_location = lambda p, loc: calls.setdefault("edit", (p, loc))
+            return cmd, captured, calls
+
+        def test_sentinel_edit_in_sublime(self):
+            cmd, captured, calls = self._make_cmd()
+            cmd.prepare_args_and_run({"commands": "edit_in_sublime"}, "/tmp/x")
+            self.assertEqual(calls.get("edit"), ("/tmp/x", None))
+            self.assertNotIn("args", captured)  # subprocess not invoked
+
+        def test_sentinel_open_in_new_window(self):
+            cmd, captured, calls = self._make_cmd()
+            cmd.prepare_args_and_run({"commands": "open_in_new_window"}, "/tmp/x")
+            self.assertEqual(calls.get("new_window"), "/tmp/x")
+
+        def test_sentinel_system_open(self):
+            cmd, captured, calls = self._make_cmd()
+            cmd.prepare_args_and_run({"commands": "system_open"}, "/tmp/x")
+            self.assertEqual(calls.get("system_open"), "/tmp/x")
+
+        def test_sentinel_add_to_project(self):
+            cmd, captured, calls = self._make_cmd()
+            cmd.prepare_args_and_run({"commands": "add_to_project"}, "/proj")
+            self.assertEqual(calls.get("add_to_project"), "/proj")
+
+        def test_pre_command_prefix_array(self):
+            cmd, captured, _ = self._make_cmd()
+            cmd.prepare_args_and_run({"commands": ["echo"], "pre_command": "sh"}, "/tmp/x")
+            self.assertEqual(captured["args"], ["sh", "echo", "/tmp/x"])
+
+        def test_terminal_wraps_array_macos(self):
+            saved = _mock_sublime.platform
+            _mock_sublime.platform = lambda: "osx"
+            try:
+                cmd, captured, _ = self._make_cmd()
+                cmd.prepare_args_and_run({"commands": ["echo"], "terminal": True}, "/tmp/x")
+                self.assertEqual(captured["args"][0], "/opt/X11/bin/xterm")
+                self.assertEqual(captured["args"][1], "-e")
+                self.assertIn("echo", captured["args"][2])
+            finally:
+                _mock_sublime.platform = saved
+
+        def test_terminal_with_pause_appends_read_prompt(self):
+            saved = _mock_sublime.platform
+            _mock_sublime.platform = lambda: "linux"
+            try:
+                cmd, captured, _ = self._make_cmd()
+                cmd.prepare_args_and_run({"commands": ["echo"], "terminal": True, "pause": True}, "/tmp/x")
+                self.assertIn("read -p", captured["args"][2])
+            finally:
+                _mock_sublime.platform = saved
+
+        def test_terminal_windows_uses_cmd_exe(self):
+            saved = _mock_sublime.platform
+            _mock_sublime.platform = lambda: "windows"
+            try:
+                cmd, captured, _ = self._make_cmd()
+                cmd.prepare_args_and_run({"commands": ["echo"], "terminal": True}, "/tmp/x")
+                self.assertEqual(captured["args"][0], "cmd.exe")
+                self.assertEqual(captured["args"][1], "/c")
+            finally:
+                _mock_sublime.platform = saved
+
+        def test_existing_opener_without_new_fields_unchanged(self):
+            cmd, captured, _ = self._make_cmd()
+            cmd.prepare_args_and_run({"commands": ["open", "-R"]}, "/tmp/x")
+            self.assertEqual(captured["args"], ["open", "-R", "/tmp/x"])
+            self.assertNotIn("shell", captured["kwargs"])
+
     class TestCopyDeepLinkBuildsLink(unittest.TestCase):
         """Smoke test the link-building branches without exercising the subprocess path."""
 

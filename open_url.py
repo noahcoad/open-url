@@ -33,6 +33,7 @@ Settings = TypedDict(
         "deep_link_line_number_only": bool,
         "copy_path_transform": str,
         "paste_relative_path_markdown_backticks": bool,
+        "autoactions": list,
     },
 )
 
@@ -53,7 +54,20 @@ settings_keys = [
     "deep_link_line_number_only",
     "copy_path_transform",
     "paste_relative_path_markdown_backticks",
+    "autoactions",
 ]
+
+# Reserved built-in command names recognized when an opener's "commands" is a string.
+# Users can write { "commands": "add_to_project" } etc. to invoke these in-process
+# instead of spawning a subprocess.
+BUILTIN_COMMANDS: frozenset[str] = frozenset(
+    {
+        "edit_in_sublime",
+        "open_in_new_window",
+        "system_open",
+        "add_to_project",
+    }
+)
 
 
 def prepend_scheme(s: str) -> str:
@@ -171,6 +185,63 @@ def merge_settings(window, keys: list[str]) -> Settings:
         return settings
     except Exception:
         return settings
+
+
+def select_default_opener(
+    autoactions: list[dict],
+    openers: list[dict],
+    path: str,
+    is_folder: bool = False,
+) -> tuple[int | None, str]:
+    """Choose a default opener from autoactions matching ``path``.
+
+    Returns (index_into_openers, mode):
+      mode == "auto"  — invoke this opener immediately, skip the menu
+      mode == "menu"  — show the menu, but pre-highlight this opener
+      mode == "none"  — no autoaction matched
+
+    Each autoaction entry: { os?, pattern? | endswith?, label, action }
+    - ``label`` matches an opener's ``label`` exactly (first match wins).
+    - ``action`` must be "auto" or "menu". Anything else falls through.
+    """
+    platform = sublime.platform()
+    for entry in autoactions or []:
+        entry_os = entry.get("os")
+        if entry_os and entry_os.lower() != platform:
+            continue
+        pattern = entry.get("pattern")
+        endswith = entry.get("endswith")
+        if pattern:
+            if not re.search(pattern, path):
+                continue
+        elif endswith:
+            if not any(path.endswith(ext) for ext in endswith):
+                continue
+        else:
+            continue  # no matcher -> skip
+        label = entry.get("label")
+        action = entry.get("action")
+        if action not in ("auto", "menu"):
+            continue
+        for idx, opener in enumerate(openers):
+            if opener.get("label") == label:
+                return (idx, action)
+    return (None, "none")
+
+
+def _wrap_in_terminal(args, *, pause: bool) -> tuple[list, dict]:
+    """Wrap ``args`` (a list to be exec'd) in a terminal invocation with optional pause."""
+    platform = sublime.platform()
+    cmd_str = " ".join(shlex.quote(str(a)) for a in args)
+    if pause:
+        cmd_str += '; read -p "Press [ENTER] to continue..."' if platform != "windows" else " & pause"
+    if platform == "osx":
+        return (["/opt/X11/bin/xterm", "-e", cmd_str], {})
+    if platform == "linux":
+        return (["/usr/bin/xterm", "-e", cmd_str], {})
+    if platform == "windows":
+        return (["cmd.exe", "/c", cmd_str], {"shell": False})
+    return (args, {})
 
 
 class OpenUrlCommand(sublime_plugin.TextCommand):
@@ -535,7 +606,16 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
     def prepare_args_and_run(self, opener: dict, path: str):
         commands = opener.get("commands", [])
+
+        # Sentinel commands dispatched in-process (no subprocess).
+        if isinstance(commands, str) and commands in BUILTIN_COMMANDS:
+            self._run_builtin(commands, path)
+            return
+
         kwargs = opener.get("kwargs", {})
+        terminal = bool(opener.get("terminal"))
+        pause = bool(opener.get("pause"))
+        pre_command = opener.get("pre_command")
 
         cwd = kwargs.get("cwd")
         if cwd == "project_root":
@@ -548,17 +628,75 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
                 kwargs["cwd"] = file_path
 
         if isinstance(commands, str):
-            kwargs["shell"] = True
-            if "$url" in commands:
-                self.run_subprocess(commands.replace("$url", path), kwargs)
+            # String form: shell=True, $url substitution OR auto-append.
+            base = commands.replace("$url", path) if "$url" in commands else f"{commands} {path}"
+            if pre_command:
+                base = f"{pre_command} {base}"
+            if terminal:
+                wrapped, extra = _wrap_in_terminal(["sh", "-c", base], pause=pause)
+                kwargs = dict(kwargs)
+                kwargs.update(extra)
+                kwargs["shell"] = False
+                self.run_subprocess(wrapped, kwargs)
             else:
-                self.run_subprocess(f"{commands} {path}", kwargs)
+                kwargs["shell"] = True
+                self.run_subprocess(base, kwargs)
+            return
+
+        # Array form: $url substitution OR auto-append.
+        has_url = any("$url" in command for command in commands)
+        if has_url:
+            args = [command.replace("$url", path) for command in commands]
         else:
-            has_url = any("$url" in command for command in commands)
-            if has_url:
-                self.run_subprocess([command.replace("$url", path) for command in commands], kwargs)
-            else:
-                self.run_subprocess(commands + [path], kwargs)
+            args = commands + [path]
+        if pre_command:
+            args = [pre_command] + args
+        if terminal:
+            wrapped, extra = _wrap_in_terminal(args, pause=pause)
+            kwargs = dict(kwargs)
+            kwargs.update(extra)
+            self.run_subprocess(wrapped, kwargs)
+        else:
+            self.run_subprocess(args, kwargs)
+
+    def _run_builtin(self, name: str, path: str) -> None:
+        """Dispatch a sentinel builtin command name."""
+        if name == "edit_in_sublime":
+            self.open_file_at_location(path, None)
+            return
+        if name == "open_in_new_window":
+            self._open_in_new_window(path)
+            return
+        if name == "system_open":
+            self._system_open(path)
+            return
+        if name == "add_to_project":
+            self._add_to_project(path)
+            return
+
+    def _open_in_new_window(self, path: str) -> None:
+        # Spawn a fresh Sublime window pointed at this path. Uses the running
+        # executable so users get the same ST flavor (build) they invoked from.
+        executable = sublime.executable_path()
+        threading.Thread(target=lambda: subprocess.Popen([executable, "-n", path])).start()
+
+    def _system_open(self, path: str) -> None:
+        platform = sublime.platform()
+        if platform == "osx":
+            args = ["open", path]
+        elif platform == "windows":
+            args = ["cmd.exe", "/c", "start", "", path]
+        else:
+            args = ["xdg-open", path]
+        threading.Thread(target=lambda: subprocess.Popen(args)).start()
+
+    def _add_to_project(self, folder: str) -> None:
+        window = self.view.window()
+        data = window.project_data() or {}
+        folders = list(data.get("folders") or [])
+        folders.append({"path": folder})
+        data["folders"] = folders
+        window.set_project_data(data)
 
     def run_subprocess(self, args, kwargs):
         """Runs on another thread to avoid blocking main thread."""
@@ -636,12 +774,26 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         """Choose from folder actions."""
         openers = match_openers(self.config["folder_custom_commands"], folder)
 
+        autoactions = self.config.get("autoactions") or []
+        idx, mode = select_default_opener(autoactions, openers, folder, is_folder=True)
+        if mode == "auto" and idx is not None:
+            self.folder_done(idx, openers, folder, raw_folder)
+            return
+
         if openers and not show_menu:
             self.folder_done(0, openers, folder, raw_folder)
             return
 
         opts = [*[opener.get("label") for opener in openers], "search..."]
-        sublime.active_window().show_quick_panel(opts, lambda idx: self.folder_done(idx, openers, folder, raw_folder))
+        if mode == "menu" and idx is not None:
+            sublime.active_window().show_quick_panel(
+                opts,
+                lambda i: self.folder_done(i, openers, folder, raw_folder),
+                0,
+                idx,
+            )
+        else:
+            sublime.active_window().show_quick_panel(opts, lambda i: self.folder_done(i, openers, folder, raw_folder))
 
     def folder_done(self, idx: int, openers: list[dict], folder: str, raw_folder: str):
         if idx < 0:
@@ -658,14 +810,31 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
         """Edit file or choose from file actions."""
         openers = match_openers(self.config["file_custom_commands"], path)
 
+        # autoactions index space matches file_done: 0=edit, 1..n=openers, n+1=search...
+        autoactions = self.config.get("autoactions") or []
+        # the "edit" pseudo-opener is index 0; user-defined openers are 1..n
+        synthetic = [{"label": "edit"}, *openers]
+        auto_idx, auto_mode = select_default_opener(autoactions, synthetic, path, is_folder=False)
+        if auto_mode == "auto" and auto_idx is not None:
+            self.file_done(auto_idx, openers, path, raw_path, location)
+            return
+
         if not show_menu:
             self.open_file_at_location(path, location)
             return
 
-        sublime.active_window().show_quick_panel(
-            ["edit", *[opener.get("label") for opener in openers], "search..."],
-            lambda idx: self.file_done(idx, openers, path, raw_path, location),
-        )
+        opts = ["edit", *[opener.get("label") for opener in openers], "search..."]
+        if auto_mode == "menu" and auto_idx is not None:
+            sublime.active_window().show_quick_panel(
+                opts,
+                lambda idx: self.file_done(idx, openers, path, raw_path, location),
+                0,
+                auto_idx,
+            )
+        else:
+            sublime.active_window().show_quick_panel(
+                opts, lambda idx: self.file_done(idx, openers, path, raw_path, location)
+            )
 
     def file_done(self, idx: int, openers: list[dict], path: str, raw_path: str, location: dict | None = None):
         if idx < 0:

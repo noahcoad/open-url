@@ -40,6 +40,27 @@
   // when pasting a relative path into a markdown file, wrap the result in backticks
   "paste_relative_path_markdown_backticks": true,
 
+  // list of regex/extension matchers that pre-select a file or folder action.
+  // each entry: { os?, pattern? | endswith?, label, action }
+  //   os       — "osx" | "windows" | "linux" (omit = all)
+  //   pattern  — regex; matches against the resolved path
+  //   endswith — array of extensions (e.g. [".sh"]); shorthand for pattern
+  //   label    — matches a label in *_custom_commands; or a built-in:
+  //              "edit", "reveal", "open in new window", "system open", "add to project"
+  //   action   — "auto" (skip menu) | "menu" (pre-highlight)
+  // example:
+  //   { "os": "windows", "endswith": [".exe"], "label": "run", "action": "auto" }
+  "autoactions": [],
+
+  // Per-opener fields recognized in *_custom_commands entries (in addition to
+  // label, os, pattern, commands, kwargs):
+  //   terminal     — true to run the command in a terminal window (xterm/cmd.exe)
+  //   pause        — true to pause after the command exits (with terminal)
+  //   pre_command  — string prepended to commands (e.g. "sh" for "sh script.sh")
+  // The "commands" field may also be a reserved sentinel string dispatched
+  // in-process: "edit_in_sublime", "open_in_new_window", "system_open",
+  // "add_to_project".
+
   // path transforms
   "aliases": {},
 
