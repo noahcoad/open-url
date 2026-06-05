@@ -115,6 +115,32 @@ def strip_file_scheme(text: str) -> str:
     return rest
 
 
+def split_path_and_loc_suffix(text: str, line_number_only: bool = False) -> tuple[str, str]:
+    """Split ``text`` into (path, full_loc_suffix).
+
+    ``full_loc_suffix`` is everything from the deep-link separator onward,
+    including any combined ``:N:/regex/`` or ``:N:"text"`` form. Returns
+    ``(text, "")`` when no valid suffix is present.
+
+    Used by callers that want to keep a deep-link suffix attached as an opaque
+    string (e.g. paste-relative-path).
+    """
+    if "://" in text:
+        return (text, "")
+    sep_idx = find_loc_sep(text, line_number_only=line_number_only)
+    if sep_idx == -1:
+        return (text, "")
+    suffix = text[sep_idx:]
+    path = text[:sep_idx]
+    # combined form: path may itself end with :N where N is a line number
+    if not line_number_only:
+        inner_sep = find_loc_sep(path, line_number_only=True)
+        if inner_sep != -1 and path[inner_sep + 1 :].isdigit():
+            suffix = path[inner_sep:] + suffix
+            path = path[:inner_sep]
+    return (path, suffix)
+
+
 def find_loc_sep(text: str, line_number_only: bool = False) -> int:
     """Find the last ':' that starts a valid deep-link location suffix.
 
@@ -576,11 +602,43 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
             flags = 0
         else:
             return
-        region = view.find(pattern, 0, flags)
-        if region is not None and not region.empty():
+
+        line_hint = location.get("line")
+
+        # Collect all matches; if a line hint is present, pick the one whose
+        # row is closest to it. Otherwise take the first match (as before).
+        matches: list = []
+        scan_from = 0
+        size = view.size()
+        while scan_from < size:
+            r = view.find(pattern, scan_from, flags)
+            if r is None or r.empty():
+                break
+            matches.append(r)
+            scan_from = r.end()
+            # safety: don't loop forever on a zero-width match
+            if scan_from <= r.begin():
+                scan_from = r.begin() + 1
+
+        chosen = None
+        if matches:
+            if line_hint is None:
+                chosen = matches[0]
+            else:
+                target_row = max(0, line_hint - 1)
+                chosen = min(matches, key=lambda r: abs(view.rowcol(r.begin())[0] - target_row))
+
+        if chosen is not None:
             view.sel().clear()
-            view.sel().add(region)
-            view.show_at_center(region)
+            view.sel().add(chosen)
+            view.show_at_center(chosen)
+        elif line_hint is not None:
+            # pattern didn't match anywhere — fall back to the line hint
+            line_region = view.text_point(max(0, line_hint - 1), 0)
+            target = sublime.Region(line_region, line_region)
+            view.sel().clear()
+            view.sel().add(target)
+            view.show_at_center(target)
         else:
             sublime.message_dialog("Location Not Found: %s" % location["value"])
 
@@ -923,10 +981,14 @@ def parse_file_location(url: str, line_number_only: bool = False) -> tuple[str, 
     """Split path:location syntax. Web URLs are returned unchanged.
 
     Returns (path, location_dict) where location_dict is one of:
-      {"type": "line", "value": int}    — for ":42"
-      {"type": "search", "value": str}  — for ':"text"' (line_number_only=False only)
-      {"type": "regex", "value": str}   — for ':/pattern/' (line_number_only=False only)
+      {"type": "line",   "value": int}                        — ":42"
+      {"type": "search", "value": str, "line": int|None}      — ':"text"'  or  ':42:"text"'
+      {"type": "regex",  "value": str, "line": int|None}      — ':/regex/' or  ':42:/regex/'
     or None if no valid location suffix is present.
+
+    The combined form ``path:N:/regex/`` (or ``path:N:"text"``) attaches the
+    line-number hint to a regex/search location so navigation can prefer the
+    match nearest line N when the pattern is ambiguous.
     """
     if "://" in url:
         return (url, None)
@@ -935,16 +997,26 @@ def parse_file_location(url: str, line_number_only: bool = False) -> tuple[str, 
         return (url, None)
     raw_path = url[:sep_idx]
     loc_token = url[sep_idx + 1 :]
+
+    # combined form: path may itself end with :N where N is a line number
+    line_hint: int | None = None
+    if not line_number_only:
+        inner_sep = find_loc_sep(raw_path, line_number_only=True)
+        if inner_sep != -1 and raw_path[inner_sep + 1 :].isdigit():
+            line_hint = int(raw_path[inner_sep + 1 :])
+            raw_path = raw_path[:inner_sep]
+
     if (raw_path.startswith('"') and raw_path.endswith('"')) or (
         raw_path.startswith("'") and raw_path.endswith("'")
     ):
         raw_path = raw_path[1:-1]
+
     if loc_token.isdigit():
         return (raw_path, {"type": "line", "value": int(loc_token)})
     if loc_token.startswith('"') and loc_token.endswith('"') and len(loc_token) >= 2:
-        return (raw_path, {"type": "search", "value": loc_token[1:-1]})
+        return (raw_path, {"type": "search", "value": loc_token[1:-1], "line": line_hint})
     if loc_token.startswith("/") and loc_token.endswith("/") and len(loc_token) >= 2:
-        return (raw_path, {"type": "regex", "value": loc_token[1:-1]})
+        return (raw_path, {"type": "regex", "value": loc_token[1:-1], "line": line_hint})
     return (url, None)
 
 
@@ -970,10 +1042,12 @@ class SelectUrlCommand(sublime_plugin.TextCommand):
 class CopyDeepLinkCommand(sublime_plugin.TextCommand):
     """Copy ``file_path:location`` deep link for the current cursor / selection.
 
-    Three output forms based on selection state:
-      - text selected      → file_path:"selected text"
-      - empty + non-blank  → file_path:/^first five words/   (regex anchor)
-      - empty + blank line → file_path:line_number
+    Output forms based on selection state:
+      - text selected      → file_path:LINE:"selected text"
+      - empty + non-blank  → file_path:LINE:/^first five words/   (regex anchor)
+      - empty + blank line → file_path:LINE                       (line number only)
+    The line-number hint is included with regex/search forms so navigation
+    can prefer the match nearest that line when the pattern is ambiguous.
     Setting ``deep_link_line_number_only`` collapses all three to line numbers.
     Setting ``copy_path_transform`` pipes file_path through a shell command first.
     """
@@ -997,17 +1071,17 @@ class CopyDeepLinkCommand(sublime_plugin.TextCommand):
         line_only = config.get("deep_link_line_number_only", False)
         sel = self.view.sel()[0]
         if not sel.empty():
+            line_num = self.view.rowcol(sel.begin())[0] + 1
             if line_only:
-                line_num = self.view.rowcol(sel.begin())[0] + 1
                 link = "%s:%d" % (file_path, line_num)
             else:
-                link = '%s:"%s"' % (file_path, self.view.substr(sel))
+                link = '%s:%d:"%s"' % (file_path, line_num, self.view.substr(sel))
         else:
             cursor = sel.begin()
+            line_num = self.view.rowcol(cursor)[0] + 1
             line_raw = self.view.substr(self.view.line(cursor))
             line_text = line_raw.strip()
             if not line_text or line_only:
-                line_num = self.view.rowcol(cursor)[0] + 1
                 link = "%s:%d" % (file_path, line_num)
             else:
                 has_leading = line_raw != line_raw.lstrip()
@@ -1015,7 +1089,7 @@ class CopyDeepLinkCommand(sublime_plugin.TextCommand):
                 escaped_words = [re.sub(r"([.^$*+?{}[\]\\|()/])", r"\\\1", w) for w in words]
                 escaped = r"\s+".join(escaped_words)
                 prefix = r"^\s*" if has_leading else "^"
-                link = "%s:/%s%s/" % (file_path, prefix, escaped)
+                link = "%s:%d:/%s%s/" % (file_path, line_num, prefix, escaped)
 
         sublime.set_clipboard(link)
         sublime.status_message("Copied: %s" % link)
@@ -1071,13 +1145,7 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 
         config = _settings_obj()
         line_only = config.get("deep_link_line_number_only", False)
-        sep_idx = find_loc_sep(raw, line_number_only=line_only)
-        if sep_idx != -1:
-            path_part = raw[:sep_idx]
-            loc_suffix = raw[sep_idx:]
-        else:
-            path_part = raw
-            loc_suffix = ""
+        path_part, loc_suffix = split_path_and_loc_suffix(raw, line_number_only=line_only)
 
         if (path_part.startswith('"') and path_part.endswith('"')) or (
             path_part.startswith("'") and path_part.endswith("'")

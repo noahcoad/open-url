@@ -534,12 +534,27 @@ if "sublime" not in sys.modules:
         def test_search_string(self):
             path, loc = parse_file_location('file.py:"hello world"')
             self.assertEqual(path, "file.py")
-            self.assertEqual(loc, {"type": "search", "value": "hello world"})
+            self.assertEqual(loc, {"type": "search", "value": "hello world", "line": None})
 
         def test_regex_location(self):
             path, loc = parse_file_location("file.py:/def foo/")
             self.assertEqual(path, "file.py")
-            self.assertEqual(loc, {"type": "regex", "value": "def foo"})
+            self.assertEqual(loc, {"type": "regex", "value": "def foo", "line": None})
+
+        def test_combined_line_plus_regex(self):
+            path, loc = parse_file_location("file.py:11:/^\\s*http/")
+            self.assertEqual(path, "file.py")
+            self.assertEqual(loc, {"type": "regex", "value": r"^\s*http", "line": 11})
+
+        def test_combined_line_plus_search(self):
+            path, loc = parse_file_location('file.py:11:"hello"')
+            self.assertEqual(path, "file.py")
+            self.assertEqual(loc, {"type": "search", "value": "hello", "line": 11})
+
+        def test_legacy_line_only_form_unchanged(self):
+            path, loc = parse_file_location("file.py:42")
+            self.assertEqual(path, "file.py")
+            self.assertEqual(loc, {"type": "line", "value": 42})
 
         def test_https_url_not_split(self):
             path, loc = parse_file_location("https://example.com/path")
@@ -1343,15 +1358,113 @@ if "sublime" not in sys.modules:
 
         def test_empty_non_blank_line_uses_regex(self):
             link = self._run("hello world\nfoo bar", cursor=0)
-            self.assertTrue(link.startswith("/tmp/foo.md:/^"))
+            # combined form: file:LINE:/regex/
+            self.assertTrue(link.startswith("/tmp/foo.md:1:/^"))
 
         def test_text_selected_uses_search(self):
             link = self._run("hello world\nfoo bar", selection=(0, 5))
-            self.assertEqual(link, '/tmp/foo.md:"hello"')
+            self.assertEqual(link, '/tmp/foo.md:1:"hello"')
 
         def test_line_only_collapses_to_line_number(self):
+            # deep_link_line_number_only=True drops the regex/search part entirely
             link = self._run("hello world\nfoo bar", selection=(0, 5), line_only=True)
             self.assertEqual(link, "/tmp/foo.md:1")
+
+        def test_line_only_blank_line_still_emits_line_number(self):
+            link = self._run("a\n\nb", cursor=2, line_only=True)
+            self.assertEqual(link, "/tmp/foo.md:2")
+
+        def test_legacy_line_only_form_parses(self):
+            # Just :42 — the original form, no regex / no search
+            path, loc = parse_file_location("/tmp/foo.md:42")
+            self.assertEqual(path, "/tmp/foo.md")
+            self.assertEqual(loc, {"type": "line", "value": 42})
+
+        def test_legacy_regex_only_form_parses(self):
+            # Just :/regex/ — older deep links from before this feature
+            path, loc = parse_file_location("/tmp/foo.md:/^http/")
+            self.assertEqual(path, "/tmp/foo.md")
+            self.assertEqual(loc, {"type": "regex", "value": "^http", "line": None})
+
+        def test_legacy_search_only_form_parses(self):
+            path, loc = parse_file_location('/tmp/foo.md:"hello"')
+            self.assertEqual(path, "/tmp/foo.md")
+            self.assertEqual(loc, {"type": "search", "value": "hello", "line": None})
+
+        def test_combined_form_parses(self):
+            # New form emitted by current Copy Deep Link
+            path, loc = parse_file_location("/tmp/foo.md:11:/^\\s*http/")
+            self.assertEqual(path, "/tmp/foo.md")
+            self.assertEqual(loc, {"type": "regex", "value": r"^\s*http", "line": 11})
+
+    class TestNavigateInView(unittest.TestCase):
+        """Verify _navigate_in_view picks the right match for each location form."""
+
+        def _make_view_and_cmd(self, text):
+            view = MockView(text)
+            view._window = MockWindow(project_data=None)
+            cmd = OpenUrlCommand(view)
+            cmd.config = dict(_DEFAULT_SETTINGS)
+            # MockView.size and substr are enough for view.find via a stub
+            return view, cmd
+
+        def _stub_find(self, view, matches_by_offset):
+            """Stub view.find to return the first match >= offset, or empty."""
+
+            class _Empty:
+                def empty(self):
+                    return True
+
+                def begin(self):
+                    return 0
+
+                def end(self):
+                    return 0
+
+            def find(pattern, start, flags):
+                # find first match in matches_by_offset whose begin >= start
+                for region in matches_by_offset:
+                    if region.begin() >= start:
+                        return region
+                return _Empty()
+
+            view.find = find
+            view.show_at_center = lambda r: None
+            view.text_point = lambda row, col: 0  # only used when no matches
+            view.sel = lambda: type("S", (), {"clear": lambda self: None, "add": lambda self, r: None})()
+
+        def test_regex_only_picks_first_match(self):
+            view, cmd = self._make_view_and_cmd("a" * 100)
+            self._stub_find(view, [_MockRegion(5, 10), _MockRegion(50, 55)])
+            chosen = []
+            view.show_at_center = lambda r: chosen.append(r)
+            cmd._navigate_in_view(view, {"type": "regex", "value": "x", "line": None})
+            self.assertEqual(chosen[0].begin(), 5)
+
+        def test_combined_picks_match_nearest_line_hint(self):
+            # Build a 20-line file ("aaa\naaa\n...").  Each line is 4 chars including newline.
+            text = "\n".join(["aaa"] * 20)
+            view, cmd = self._make_view_and_cmd(text)
+            # row 1 begins at offset 4; row 10 begins at offset 40.
+            row1 = _MockRegion(4, 7)
+            row10 = _MockRegion(40, 43)
+            self._stub_find(view, [row1, row10])
+            chosen = []
+            view.show_at_center = lambda r: chosen.append(r)
+            # line hint = 11 (1-based) → row 10 (0-based) wins over row 1
+            cmd._navigate_in_view(view, {"type": "regex", "value": "aaa", "line": 11})
+            self.assertEqual(view.rowcol(chosen[0].begin())[0], 10)
+
+        def test_combined_falls_back_to_line_when_no_match(self):
+            text = "\n".join(["aaa"] * 20)
+            view, cmd = self._make_view_and_cmd(text)
+            self._stub_find(view, [])  # no matches
+            chosen = []
+            view.show_at_center = lambda r: chosen.append(r)
+            view.text_point = lambda row, col: row  # not realistic but we just need a region added
+            cmd._navigate_in_view(view, {"type": "regex", "value": "zzz", "line": 7})
+            # Fallback path adds a region; chosen is non-empty
+            self.assertTrue(len(chosen) >= 1)
 
 
 if __name__ == "__main__":
