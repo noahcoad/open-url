@@ -60,7 +60,6 @@
   // which opens the file in Sublime (honoring any deep-link suffix). No need to
   // include it here.
   "file_custom_commands": [
-    { "label": "run",                 "commands": "system_open" },
     { "label": "reveal", "os": "osx",     "commands": ["open", "-R"] },
     { "label": "reveal", "os": "windows", "commands": ["explorer", "/select,"] },
     { "label": "reveal", "os": "linux",   "commands": ["nautilus", "--browser"] },
@@ -88,9 +87,9 @@
   //   label    — matches a label in *_custom_commands; or a built-in name
   //   action   — "auto" (skip menu) | "menu" (pre-highlight)
   "autoactions": [
-    { "os": "windows", "endswith": [".exe", ".com"], "label": "run",  "action": "auto" },
-    { "os": "windows", "endswith": [".bat", ".cmd"], "label": "run",  "action": "menu" },
-    { "endswith": [".sublime-project"],              "label": "edit", "action": "auto" },
+    { "os": "windows", "endswith": [".exe", ".com"], "label": "system open", "action": "auto" },
+    { "os": "windows", "endswith": [".bat", ".cmd"], "label": "system open", "action": "menu" },
+    { "endswith": [".sublime-project"],              "label": "edit",        "action": "auto" },
     { "endswith": [".txt", ".md", ".log", ".config", ".sublime-settings"],
       "label": "edit", "action": "auto" }
   ]

@@ -1432,8 +1432,10 @@ if "sublime" not in sys.modules:
 			"""File menu labels match v2 feel."""
 			labels = [o["label"] for o in self.defaults["file_custom_commands"]]
 			self.assertNotIn("edit", labels)
-			for expected in ("run", "reveal", "new window", "system open"):
+			for expected in ("reveal", "new window", "system open"):
 				self.assertIn(expected, labels)
+			# 'run' was removed because it duplicated 'system open' on every platform
+			self.assertNotIn("run", labels)
 
 		def test_folder_menu_labels_match_v2_feel(self):
 			"""Folder menu labels match v2 feel."""
@@ -1510,7 +1512,7 @@ if "sublime" not in sys.modules:
 				_mock_sublime.platform = saved
 
 		def test_exe_auto_runs_on_windows(self):
-			"""Exe auto runs on windows."""
+			"""Exe files auto-pick the 'system open' action on Windows."""
 			saved = _mock_sublime.platform
 			_mock_sublime.platform = lambda: "windows"
 			try:
@@ -1518,7 +1520,7 @@ if "sublime" not in sys.modules:
 				synthetic = [{"label": "edit"}, *openers]
 				idx, mode = open_url.select_default_opener(self.defaults["autoactions"], synthetic, "/tmp/x.exe")
 				self.assertEqual(mode, "auto")
-				self.assertEqual(synthetic[idx]["label"], "run")
+				self.assertEqual(synthetic[idx]["label"], "system open")
 			finally:
 				_mock_sublime.platform = saved
 

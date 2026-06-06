@@ -35,7 +35,7 @@ search_for_me
 
 After expanding the selection (using `delimiters`), Open URL tries the following in order. The first match wins.
 
-1. **File** — opens it in Sublime, or shows a menu (edit / run / reveal / new window / system open).
+1. **File** — opens it in Sublime, or shows a menu (edit / reveal / new window / system open).
 2. **Folder** — shows a menu (new window / reveal / add to project).
 3. **Web URL** (e.g. `google.com` or `https://example.com`) — opens in your browser.
 4. **`other_custom_commands` match** — passes the text to whatever shell command you've configured.
@@ -176,7 +176,7 @@ Sometimes the right action is in-process (no subprocess). Use one of these reser
 | `"system_open"` | Hand off to the OS — `open` on macOS, `xdg-open` on Linux, `cmd /c start` on Windows. |
 | `"add_to_project"` | Append the folder to the current Sublime window's project. |
 
-The shipped defaults use these for **edit** (synthesized at runtime), **run**, **reveal**, **new window**, and **add to project**.
+The shipped defaults use these for **edit** (synthesized at runtime), **reveal**, **new window**, **system open**, and **add to project**.
 
 ## `autoactions` — pre-select an action by file type
 
