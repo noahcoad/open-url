@@ -64,13 +64,13 @@
     { "label": "reveal", "os": "osx",     "commands": ["open", "-R"] },
     { "label": "reveal", "os": "windows", "commands": ["explorer", "/select,"] },
     { "label": "reveal", "os": "linux",   "commands": ["nautilus", "--browser"] },
-    { "label": "open in new window",  "commands": "open_in_new_window" },
+    { "label": "new window",          "commands": "open_in_new_window" },
     { "label": "system open",         "commands": "system_open" }
   ],
 
   // menu actions shown when the resolved path is a folder
   "folder_custom_commands": [
-    { "label": "open in new window",  "commands": "open_in_new_window" },
+    { "label": "new window",          "commands": "open_in_new_window" },
     { "label": "reveal", "os": "osx",     "commands": ["open"] },
     { "label": "reveal", "os": "windows", "commands": ["explorer"] },
     { "label": "reveal", "os": "linux",   "commands": ["nautilus", "--browser"] },

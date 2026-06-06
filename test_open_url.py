@@ -1432,13 +1432,13 @@ if "sublime" not in sys.modules:
 			"""File menu labels match v2 feel."""
 			labels = [o["label"] for o in self.defaults["file_custom_commands"]]
 			self.assertNotIn("edit", labels)
-			for expected in ("run", "reveal", "open in new window", "system open"):
+			for expected in ("run", "reveal", "new window", "system open"):
 				self.assertIn(expected, labels)
 
 		def test_folder_menu_labels_match_v2_feel(self):
 			"""Folder menu labels match v2 feel."""
 			labels = [o["label"] for o in self.defaults["folder_custom_commands"]]
-			for expected in ("open in new window", "reveal", "add to project"):
+			for expected in ("new window", "reveal", "add to project"):
 				self.assertIn(expected, labels)
 
 		def test_browser_search_not_in_defaults(self):
