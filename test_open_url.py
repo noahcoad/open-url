@@ -1281,29 +1281,19 @@ if "sublime" not in sys.modules:
 			self.assertNotIn("shell", captured["kwargs"])
 
 	# =====================================================================
-	# Phase 4 tests: browser_search shortcut
+	# modify_or_search_action: panel-only fallback (v1 behavior)
 	# =====================================================================
 
-	class TestResolveBrowserSearch(unittest.TestCase):
-		def test_substitutes_query(self):
-			"""Substitutes query."""
-			url = open_url._resolve_browser_search("hello world", "https://x.com/?q={query}")
-			self.assertEqual(url, "https://x.com/?q=hello%20world")
-
-		def test_special_chars_encoded(self):
-			"""Special chars encoded."""
-			url = open_url._resolve_browser_search("a&b=c", "https://x.com/?q={query}")
-			self.assertEqual(url, "https://x.com/?q=a%26b%3Dc")
-
 	class TestModifyOrSearchAction(unittest.TestCase):
-		def _make_cmd(self, web_searchers, browser_search):
-			"""Construct an OpenUrlCommand wired to mocks for capturing calls."""
+		"""``modify_or_search_action`` always shows a quick panel: ``modify path`` first, then each web_searcher."""
+
+		def _make_cmd(self, web_searchers):
+			"""Construct an OpenUrlCommand with stubbed open_tab and quick panel."""
 			view = MockView()
 			view._window = MockWindow(project_data=None)
 			cmd = OpenUrlCommand(view)
 			cmd.config = dict(_DEFAULT_SETTINGS)
 			cmd.config["web_searchers"] = web_searchers
-			cmd.config["browser_search"] = browser_search
 			captured = {}
 			cmd.open_tab = lambda u: captured.setdefault("opened", u)
 
@@ -1322,32 +1312,24 @@ if "sublime" not in sys.modules:
 				_mock_sublime.active_window = saved
 			return cmd, captured, panel
 
-		def test_no_searchers_with_browser_search_opens_directly(self):
-			"""No searchers with browser search opens directly."""
-			cmd, captured, panel = self._make_cmd([], "https://x.com/?q={query}")
-			self.assertEqual(captured.get("opened"), "https://x.com/?q=foo%20bar")
-			self.assertNotIn("opts", panel)
-
-		def test_no_searchers_no_browser_search_shows_modify_only(self):
-			"""No searchers no browser search shows modify only."""
-			cmd, captured, panel = self._make_cmd([], "")
+		def test_no_searchers_shows_modify_only(self):
+			"""With empty web_searchers the panel still shows the 'modify path' entry."""
+			cmd, captured, panel = self._make_cmd([])
 			self.assertEqual(panel["opts"], ["modify path foo bar"])
 			self.assertNotIn("opened", captured)
 
-		def test_searchers_no_browser_search(self):
-			"""Searchers no browser search."""
-			searchers = [{"label": "google", "url": "https://google.com/?q="}]
-			cmd, captured, panel = self._make_cmd(searchers, "")
-			self.assertEqual(panel["opts"], ["modify path foo bar", "google (foo bar)"])
+		def test_single_searcher_shows_panel_with_one_entry(self):
+			"""One web_searcher means one search entry alongside the 'modify path' entry — no duplicate fallback."""
+			searchers = [{"label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8"}]
+			cmd, captured, panel = self._make_cmd(searchers)
+			self.assertEqual(panel["opts"], ["modify path foo bar", "google search (foo bar)"])
 
-		def test_searchers_with_browser_search_appends_entry(self):
-			"""Searchers with browser search appends entry."""
-			searchers = [{"label": "google", "url": "https://google.com/?q="}]
-			cmd, captured, panel = self._make_cmd(searchers, "https://x.com/?q={query}")
-			self.assertEqual(panel["opts"], ["modify path foo bar", "google (foo bar)", "search (foo bar)"])
-			# selecting the last entry hits browser_search
-			panel["on_done"](2)
-			self.assertEqual(captured.get("opened"), "https://x.com/?q=foo%20bar")
+		def test_selecting_searcher_runs_it(self):
+			"""Selecting a searcher entry calls open_tab with the encoded query URL."""
+			searchers = [{"label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8"}]
+			cmd, captured, panel = self._make_cmd(searchers)
+			panel["on_done"](1)
+			self.assertEqual(captured.get("opened"), "http://google.com/search?q=foo%20bar")
 
 	# =====================================================================
 	# Phase 5 tests: defaults overhaul
@@ -1444,9 +1426,15 @@ if "sublime" not in sys.modules:
 			for expected in ("open in new window", "reveal", "add to project"):
 				self.assertIn(expected, labels)
 
-		def test_browser_search_default_set(self):
-			"""Browser search default set."""
-			self.assertIn("{query}", self.defaults["browser_search"])
+		def test_browser_search_not_in_defaults(self):
+			"""``browser_search`` is no longer part of the v3 schema; ``web_searchers`` is the single source of truth."""
+			self.assertNotIn("browser_search", self.defaults)
+
+		def test_web_searchers_default_has_google(self):
+			"""Default ``web_searchers`` ships with one Google entry — users can extend or empty as desired."""
+			searchers = self.defaults["web_searchers"]
+			self.assertEqual(len(searchers), 1)
+			self.assertEqual(searchers[0]["label"], "google search")
 
 		def test_autoactions_present(self):
 			"""Autoactions present."""

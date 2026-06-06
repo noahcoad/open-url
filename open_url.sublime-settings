@@ -20,11 +20,6 @@
   // example: chrome, linux
   // "web_browser_path": "/usr/bin/google-chrome %s"
 
-  // shortcut search URL used when web_searchers is empty.  {query} is replaced
-  // with URL-encoded text.  When both this and web_searchers are set, this
-  // appears as the last entry in the search panel.
-  "browser_search": "https://www.google.com/search?q={query}",
-
   // if URL is neither a local file nor a web URL, pass it to a web searcher
   "web_searchers": [
     {

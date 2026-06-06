@@ -39,7 +39,7 @@ After expanding the selection (using `delimiters`), Open URL tries the following
 2. **Folder** — shows a menu (open in new window / reveal / add to project).
 3. **Web URL** (e.g. `google.com` or `https://example.com`) — opens in your browser.
 4. **`other_custom_commands` match** — passes the text to whatever shell command you've configured.
-5. **Fallback** — pass to `web_searchers` (panel) or `browser_search` (direct).
+5. **Fallback** — show the modify-or-search panel, populated from `web_searchers`.
 
 Paths can be **absolute**, **relative to the current file**, or **relative to the project root**. Env vars and `~` are expanded. The selection can be tweaked further with [URL/Path Transforms](#url--path-transforms).
 
@@ -221,18 +221,16 @@ So with the defaults, typing `users` resolves to (in order): `users`, `users.js`
 
 ## Web search
 
-If the selection isn't a file, folder, or URL, Open URL falls back to web search. Two settings control this:
-
-- `browser_search` — a URL template with `{query}`. Used as the direct fallback when `web_searchers` is empty. Default: Google.
-- `web_searchers` — a list of search engines. When non-empty, you get a panel to choose from (with `browser_search` appended as the last entry if it's set).
+If the selection isn't a file, folder, or URL, Open URL shows a panel of search engines, populated from the `web_searchers` setting. The first entry in the panel is always **modify path**, which lets you tweak the term and try resolving it again.
 
 ```json
-"browser_search": "https://www.google.com/search?q={query}",
 "web_searchers": [
   { "label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8" },
   { "label": "github code",   "url": "https://github.com/search?type=code&q=" }
 ]
 ```
+
+Set `web_searchers` to `[]` if you'd rather have no search engines (only the modify-path entry remains).
 
 ## Copy Transformed Path
 
@@ -272,8 +270,7 @@ Open with **Preferences → Package Settings → Open URL → Settings**.
 | `trailing_delimiters` | `";.:"` | Recursively stripped from the end of the URL/path. |
 | `web_browser` | `""` | Browser name (from [Python's `webbrowser` list](https://docs.python.org/3.3/library/webbrowser.html)). Empty = system default. |
 | `web_browser_path` | `""` | Explicit browser executable path. Overrides `web_browser`. |
-| `browser_search` | `"https://www.google.com/search?q={query}"` | Direct search-URL template. `{query}` gets URL-encoded. |
-| `web_searchers` | `[google search]` | List of search engines to choose from. |
+| `web_searchers` | `[google search]` | List of search engines shown in the modify-or-search panel. |
 | `aliases` | `{}` | String substitutions applied to the selection. |
 | `search_paths` | `["src"]` | Directory roots tried as prefixes. |
 | `file_prefixes` | `[]` | Prefixes added to the basename. |
