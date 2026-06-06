@@ -1,3 +1,28 @@
+"""Open URL — a Sublime Text plugin for opening files, folders, and URLs from anywhere in the editor.
+
+Public commands (registered with Sublime Text):
+	open_url               — open the file / folder / URL under the cursor
+	select_url             — expand the cursor to a URL/path region and copy it to the clipboard
+	copy_deep_link         — copy a ``path:LINE:/regex/`` link pointing at the cursor
+	copy_transformed_path  — copy the current file path through ``copy_path_transform``
+	paste_relative_path    — paste a clipboard path normalized to the shortest form
+
+Module entry points:
+	OpenUrlCommand.run / handle  — the resolution cascade (file -> folder -> web URL -> custom -> search)
+	parse_file_location          — splits ``path:LINE`` / ``:"text"`` / ``:/regex/`` / ``:N-M`` deep links
+	apply_path_transform         — runs the ``copy_path_transform`` shell command
+	select_default_opener        — autoaction matcher for ``file_custom_commands`` / ``folder_custom_commands``
+
+Settings live in ``open_url.sublime-settings`` (see README for the full list of keys). User-folder
+settings replace defaults entry-by-entry; project ``["settings"]["open_url"]`` overrides both.
+
+Sentinel command names (used in ``commands`` strings inside ``*_custom_commands``):
+	edit_in_sublime, open_in_new_window, system_open, add_to_project
+These dispatch in-process via ``_run_builtin`` rather than spawning a subprocess.
+
+Repository: https://github.com/noahcoad/open-url
+"""
+
 from __future__ import annotations
 
 import os
