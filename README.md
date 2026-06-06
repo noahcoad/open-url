@@ -47,7 +47,7 @@ Paths can be **absolute**, **relative to the current file**, or **relative to th
 
 | Command | macOS | Linux/Windows |
 |---|---|---|
-| **Open URL** | <kbd>ctrl+u</kbd> | <kbd>ctrl+alt+u</kbd> |
+| **Open URL** | <kbd>ctrl+u</kbd> · <kbd>alt</kbd>+double-click | <kbd>ctrl+alt+u</kbd> · <kbd>alt</kbd>+double-click |
 | **Open URL: Select URL** | <kbd>ctrl+shift+u</kbd> | <kbd>ctrl+alt+shift+u</kbd> |
 | **Open URL: Copy Deep Link** | <kbd>ctrl+alt+shift+u</kbd> | <kbd>ctrl+alt+shift+d</kbd> |
 | **Open URL: Copy Transformed Path** | <kbd>ctrl+alt+shift+c</kbd> | <kbd>ctrl+alt+shift+c</kbd> |
