@@ -1,7 +1,13 @@
 [flake8]
+# W191 — indentation contains tabs (we use tabs intentionally; not PEP 8)
+# E101 — mixed spaces/tabs (suppressed because we use tabs for indentation; aligned comments may use spaces)
+# E128 — continuation line under-indented for visual indent (irrelevant with tabs)
 ignore =
   C812,
   C813,
   C814,
-  E226
+  E226,
+  W191,
+  E101,
+  E128
 max-line-length = 120
