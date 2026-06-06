@@ -73,6 +73,7 @@ BUILTIN_COMMANDS: frozenset[str] = frozenset(
 
 
 def prepend_scheme(s: str) -> str:
+	"""Prepend ``http://`` to ``s`` if it has no URL scheme; return as-is otherwise."""
 	o = urlparse(s)
 	if not o.scheme:
 		s = "http://" + s
@@ -162,6 +163,7 @@ def find_loc_sep(text: str, line_number_only: bool = False) -> int:
 
 
 def match_openers(openers: list[dict], url: str) -> list[dict]:
+	"""Filter ``openers`` to those whose ``os`` and ``pattern`` (if present) match the current platform and ``url``."""
 	ret: list[dict] = []
 	platform = sublime.platform()
 	for opener in openers:
@@ -176,6 +178,7 @@ def match_openers(openers: list[dict], url: str) -> list[dict]:
 
 
 def resolve_aliases(url: str, aliases: dict) -> str:
+	"""Apply the ``aliases`` substitution dict to ``url`` (each key replaced by its value)."""
 	for key, val in aliases.items():
 		url = url.replace(key, val)
 	return url
@@ -184,6 +187,11 @@ def resolve_aliases(url: str, aliases: dict) -> str:
 def generate_urls(
 	url: str, search_paths: list[str], file_prefixes: list[str], file_suffixes: list[str], trailing_delimiters: str
 ):
+	"""Expand ``url`` into the cross product of search_paths × file_prefixes × file_suffixes.
+
+	Also tries the input both with and without trailing delimiter chars stripped.
+	Resolution callers iterate this list and use the first existing file or folder.
+	"""
 	urls: list[str] = []
 
 	bare_urls = [url]
@@ -206,6 +214,7 @@ def _resolve_browser_search(term: str, browser_search: str, encoding: str = "utf
 
 
 def merge_settings(window, keys: list[str]) -> Settings:
+	"""Load Open URL settings, then layer per-project overrides from ``window.project_data()`` on top."""
 	settings_object = sublime.load_settings("open_url.sublime-settings")
 	settings = cast(Settings, {k: settings_object.get(k) for k in keys})
 
@@ -287,11 +296,19 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		show_menu: bool = True,
 		show_input: bool = False,
 	) -> None:
+		"""Entry point for the ``open_url`` command.
+
+		Resolves the cursor / selection (or the explicit ``url`` kwarg) into a file,
+		folder, web URL, or search query and dispatches to the appropriate action.
+		``show_menu=False`` skips the file/folder action menu; ``show_input=True``
+		prompts the user for a path before dispatching.
+		"""
 		self.config = merge_settings(self.view.window(), settings_keys)
 
 		if show_input:
 
 			def on_done(input_url: str):
+				"""Continuation invoked once the user has finished typing in the input panel."""
 				self.handle(input_url, show_menu)
 
 			self.view.window().show_input_panel("Path:", "", on_done, None, None)
@@ -339,6 +356,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			self.handle(url, show_menu)
 
 	def handle(self, url: str, show_menu: bool) -> None:
+		"""Apply transforms to ``url`` and dispatch: file action, folder action, web URL, custom command, or search."""
 		url = resolve_aliases(url, self.config["aliases"])
 		urls = generate_urls(
 			url,
@@ -597,12 +615,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		self._navigate_when_loaded(view, location)
 
 	def _navigate_when_loaded(self, view, location: dict) -> None:
+		"""Poll until ``view`` finishes loading, then dispatch to ``_navigate_in_view``."""
 		if view.is_loading():
 			sublime.set_timeout(lambda: self._navigate_when_loaded(view, location), 100)
 		else:
 			self._navigate_in_view(view, location)
 
 	def _navigate_in_view(self, view, location: dict) -> None:
+		"""Move the selection in ``view`` to the deep-link ``location`` (range, search, or regex)."""
 		if location["type"] == "range":
 			# Select all text from start of `start` line through end of `end` line.
 			start = max(0, location["start"] - 1)
@@ -666,12 +686,14 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			sublime.message_dialog("Location Not Found: %s" % location["value"])
 
 	def file_path(self):
+		"""Return the directory containing the current view's file, or ``None`` if unsaved."""
 		path = self.view.file_name()
 		if path:  # this file has been saved to disk
 			return os.path.dirname(path)
 		return None
 
 	def project_path(self):
+		"""Return the first folder of the current Sublime project, or ``None`` if not in a project."""
 		project = self.view.window().project_data()
 		if project is None:
 			return None
@@ -698,6 +720,15 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		return os.path.join(project_path, path)
 
 	def prepare_args_and_run(self, opener: dict, path: str):
+		"""Build the subprocess invocation for ``opener`` and run it.
+
+		Honors:
+		- ``commands`` as a sentinel string (dispatched in-process)
+		- ``commands`` as an argv array or shell string with ``$url`` substitution
+		- ``terminal`` / ``pause`` (wrap in xterm/cmd.exe with optional pause)
+		- ``pre_command`` (prepended to the command)
+		- ``kwargs.cwd`` magic values ``project_root`` and ``current_file``
+		"""
 		commands = opener.get("commands", [])
 
 		# Sentinel commands dispatched in-process (no subprocess).
@@ -791,6 +822,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		subprocess.Popen(args, cwd=cwd)
 
 	def _system_open(self, path: str) -> None:
+		"""Hand ``path`` off to the OS default opener (``open`` / ``xdg-open`` / ``cmd /c start``)."""
 		platform = sublime.platform()
 		if platform == "osx":
 			args = ["open", path]
@@ -801,6 +833,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		threading.Thread(target=lambda: subprocess.Popen(args)).start()
 
 	def _add_to_project(self, folder: str) -> None:
+		"""Append ``folder`` to the current Sublime window's project folder list."""
 		window = self.view.window()
 		data = window.project_data() or {}
 		folders = list(data.get("folders") or [])
@@ -809,18 +842,21 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		window.set_project_data(data)
 
 	def run_subprocess(self, args, kwargs):
-		"""Runs on another thread to avoid blocking main thread."""
+		"""Run ``args`` in a background thread via ``subprocess.check_call`` to avoid blocking the UI."""
 
 		def sp(args, kwargs):
+			"""Worker target that invokes the subprocess."""
 			subprocess.check_call(args, **kwargs)
 
 		threading.Thread(target=sp, args=(args, kwargs)).start()
 
 	def open_tab(self, url: str) -> None:
+		"""Open ``url`` in a browser tab on a background thread; surface friendly errors via dialogs."""
 		browser = self.config["web_browser"]
 		browser_path = self.config["web_browser_path"]
 
 		def ot(url, browser, browser_path):
+			"""Worker target that resolves the browser and opens the tab."""
 			if browser_path:
 				if not webbrowser.get(browser_path).open(url):
 					sublime.error_message(f'Could not open tab using your "web_browser_path" setting: {browser_path}')
@@ -861,6 +897,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		)
 
 	def modify_or_search_done(self, idx: int, searchers, term: str, browser_search: str = ""):
+		"""Quick-panel callback for ``modify_or_search_action``: either edit the term, search, or use ``browser_search``."""
 		if idx < 0:
 			return
 		if idx == 0:
@@ -888,6 +925,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			pass
 
 	def other_action(self, path: str, openers: list[dict], show_menu: bool):
+		"""Show the action menu (or auto-pick the first opener) for non-file/non-folder text matching ``other_custom_commands``."""
 		if openers and not show_menu:
 			self.other_done(0, openers, path)
 			return
@@ -896,6 +934,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		sublime.active_window().show_quick_panel(opts, lambda idx: self.other_done(idx, openers, path))
 
 	def other_done(self, idx, openers, path):
+		"""Quick-panel callback for ``other_action``: invoke the chosen opener."""
 		if idx < 0:
 			return
 		opener = openers[idx]
@@ -927,6 +966,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			sublime.active_window().show_quick_panel(opts, lambda i: self.folder_done(i, openers, folder, raw_folder))
 
 	def folder_done(self, idx: int, openers: list[dict], folder: str, raw_folder: str):
+		"""Quick-panel callback for ``folder_action``: invoke the chosen opener or fall through to search."""
 		if idx < 0:
 			return
 		if idx >= len(openers):
@@ -968,6 +1008,11 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 			)
 
 	def file_done(self, idx: int, openers: list[dict], path: str, raw_path: str, location: dict | None = None):
+		"""Quick-panel callback for ``file_action``.
+
+		Index 0 is the synthetic ``edit`` entry (open in Sublime, honoring deep-link ``location``).
+		Indices 1..n correspond to ``openers``. Index n+1 falls through to the modify/search panel.
+		"""
 		if idx < 0:
 			return
 		if idx == 0:
@@ -1056,6 +1101,7 @@ def parse_file_location(url: str, line_number_only: bool = False) -> tuple[str, 
 
 
 def _settings_obj():
+	"""Return the live ``open_url.sublime-settings`` Settings object (User-merged)."""
 	return sublime.load_settings("open_url.sublime-settings")
 
 
@@ -1063,6 +1109,7 @@ class SelectUrlCommand(sublime_plugin.TextCommand):
 	"""Expand cursor to URL/path boundaries, add to selection, copy to clipboard."""
 
 	def run(self, edit=None, url: str | None = None) -> None:
+		"""Run ``select_url``: expand the cursor and copy the result."""
 		# Bind a transient config so OpenUrlCommand.find_selection sees delimiters.
 		helper = OpenUrlCommand(self.view)
 		helper.config = merge_settings(self.view.window(), settings_keys)
@@ -1071,6 +1118,7 @@ class SelectUrlCommand(sublime_plugin.TextCommand):
 		sublime.set_clipboard(self.view.substr(region).strip())
 
 	def is_enabled(self) -> bool:
+		"""``select_url`` only makes sense in a view context."""
 		return self.view is not None
 
 
@@ -1088,6 +1136,7 @@ class CopyDeepLinkCommand(sublime_plugin.TextCommand):
 	"""
 
 	def run(self, edit=None) -> None:
+		"""Run ``copy_deep_link``: emit ``path``, ``path:LINE``, ``path:LINE:/regex/``, or ``path:LINE:"text"``."""
 		file_path = self.view.file_name()
 		if not file_path:
 			sublime.status_message("File has no path")
@@ -1134,6 +1183,7 @@ class CopyTransformedPathCommand(sublime_plugin.TextCommand):
 	"""Copy current file path through ``copy_path_transform``. Hidden when unset."""
 
 	def run(self, edit=None) -> None:
+		"""Run ``copy_transformed_path``: pipe the current file's path through ``copy_path_transform`` and copy it."""
 		file_path = self.view.file_name()
 		if not file_path:
 			sublime.status_message("File has no path")
@@ -1151,6 +1201,7 @@ class CopyTransformedPathCommand(sublime_plugin.TextCommand):
 		sublime.status_message("Copied: %s" % new_path)
 
 	def is_visible(self) -> bool:
+		"""Hide this palette entry unless ``copy_path_transform`` is configured."""
 		return bool(_settings_obj().get("copy_path_transform", ""))
 
 
@@ -1166,6 +1217,7 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 	"""
 
 	def run(self, edit) -> None:
+		"""Run ``paste_relative_path``: paste the clipboard at each cursor, normalized to the shortest form."""
 		raw = sublime.get_clipboard().strip()
 		if not raw:
 			return

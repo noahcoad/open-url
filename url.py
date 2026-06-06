@@ -5,4 +5,5 @@ domains = "aaa|aarp|abb|abbott|abbvie|abogado|abudhabi|ac|academy|accenture|acco
 
 
 def is_url(path: str) -> bool:
+	"""Return True if ``path`` ends with a token whose suffix is a known TLD."""
 	return bool(re.search(r"\w[^\s]*\.(?:%s)(/[^\s]*)?\Z" % domains, path, re.IGNORECASE))
