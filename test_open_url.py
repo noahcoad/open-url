@@ -7,10 +7,6 @@ Run with:  python3 test_open_url.py
 
 When Sublime Text loads this file it already has 'sublime' in sys.modules, and the
 entire test body is skipped so ST sees a no-op module.
-
-Phase 0 (this file) ports v2's harness onto master. The v2-symbol test classes
-(TestFindLocSep, TestParseFileLocation, TestFindSelection, etc.) are skipped
-until the symbols they reference land in Phase 1+.
 """
 
 import os
@@ -241,7 +237,7 @@ if "sublime" not in sys.modules:
 		pass
 
 	# =====================================================================
-	# v1-surface tests (Phase 0): cover existing master functions
+	# Settings, openers, paths, args
 	# =====================================================================
 
 	class TestMergeSettings(unittest.TestCase):
@@ -501,7 +497,7 @@ if "sublime" not in sys.modules:
 			self.assertEqual(prepend_scheme("https://example.com"), "https://example.com")
 
 	# =====================================================================
-	# Phase 1 tests: deep-link parsing, file-scheme stripping, line-start scan
+	# Deep-link parsing, file-scheme stripping, line-start scan
 	# =====================================================================
 
 	class TestFindLocSep(unittest.TestCase):
@@ -847,7 +843,7 @@ if "sublime" not in sys.modules:
 			self.assertIsNone(self._scan(""))
 
 	# =====================================================================
-	# Phase 2 tests: find_selection, selection, sibling commands
+	# find_selection, selection, sibling commands
 	# =====================================================================
 
 	def _expand(text, cursor=None, selection=None):
@@ -1040,7 +1036,7 @@ if "sublime" not in sys.modules:
 			self.assertTrue(self._make_cmd("echo {path}"))
 
 	# =====================================================================
-	# Phase 3 tests: autoactions + sentinel commands + opener fields
+	# autoactions + sentinel commands + opener fields
 	# =====================================================================
 
 	class TestSelectDefaultOpener(unittest.TestCase):
@@ -1281,7 +1277,7 @@ if "sublime" not in sys.modules:
 			self.assertNotIn("shell", captured["kwargs"])
 
 	# =====================================================================
-	# modify_or_search_action: panel-only fallback (v1 behavior)
+	# modify_or_search_action: panel-only fallback
 	# =====================================================================
 
 	class TestModifyOrSearchAction(unittest.TestCase):
@@ -1347,7 +1343,7 @@ if "sublime" not in sys.modules:
 			self.assertNotIn("opened", captured)
 
 	# =====================================================================
-	# Phase 5 tests: defaults overhaul
+	# Default settings file
 	# =====================================================================
 
 	def _strip_jsonc(text):
@@ -1427,18 +1423,18 @@ if "sublime" not in sys.modules:
 			):
 				self.assertIn(key, self.defaults, f"setting {key} should still be present")
 
-		def test_file_menu_labels_match_v2_feel(self):
-			# "edit" is synthesized at runtime by file_action, so it must NOT appear in defaults.
-			"""File menu labels match v2 feel."""
+		def test_default_file_menu_labels(self):
+			"""Default file menu has reveal, new window, system open — and no synthetic 'edit' or duplicate 'run'."""
 			labels = [o["label"] for o in self.defaults["file_custom_commands"]]
+			# 'edit' is synthesized at runtime by file_action, so it must NOT appear in defaults.
 			self.assertNotIn("edit", labels)
 			for expected in ("reveal", "new window", "system open"):
 				self.assertIn(expected, labels)
-			# 'run' was removed because it duplicated 'system open' on every platform
+			# 'run' was removed because it duplicated 'system open' on every platform.
 			self.assertNotIn("run", labels)
 
-		def test_folder_menu_labels_match_v2_feel(self):
-			"""Folder menu labels match v2 feel."""
+		def test_default_folder_menu_labels(self):
+			"""Default folder menu has new window, reveal, add to project."""
 			labels = [o["label"] for o in self.defaults["folder_custom_commands"]]
 			for expected in ("new window", "reveal", "add to project"):
 				self.assertIn(expected, labels)

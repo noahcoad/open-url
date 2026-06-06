@@ -799,7 +799,7 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		not fire), and shelling out to ``subl`` from PATH risks launching a
 		different ST build. We rewrite executable_path() to the bundled
 		SharedSupport/bin/subl so the same running instance handles the open
-		with full project events. (Ported from v2.)
+		with full project events.
 		"""
 		executable = sublime.executable_path()
 		if sublime.platform() == "osx":
