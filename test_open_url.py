@@ -1313,23 +1313,38 @@ if "sublime" not in sys.modules:
 			return cmd, captured, panel
 
 		def test_no_searchers_shows_modify_only(self):
-			"""With empty web_searchers the panel still shows the 'modify path' entry."""
+			"""With empty web_searchers the panel still shows the 'modify path (term)' entry as the only option."""
 			cmd, captured, panel = self._make_cmd([])
-			self.assertEqual(panel["opts"], ["modify path foo bar"])
+			self.assertEqual(panel["opts"], ["modify path (foo bar)"])
 			self.assertNotIn("opened", captured)
 
-		def test_single_searcher_shows_panel_with_one_entry(self):
-			"""One web_searcher means one search entry alongside the 'modify path' entry — no duplicate fallback."""
+		def test_single_searcher_shows_panel_with_modify_last(self):
+			"""One web_searcher: search entry first, modify-path entry last — both wrap the term in parens."""
 			searchers = [{"label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8"}]
 			cmd, captured, panel = self._make_cmd(searchers)
-			self.assertEqual(panel["opts"], ["modify path foo bar", "google search (foo bar)"])
+			self.assertEqual(panel["opts"], ["google search (foo bar)", "modify path (foo bar)"])
 
 		def test_selecting_searcher_runs_it(self):
-			"""Selecting a searcher entry calls open_tab with the encoded query URL."""
+			"""Selecting a searcher entry (index 0) calls open_tab with the encoded query URL."""
 			searchers = [{"label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8"}]
 			cmd, captured, panel = self._make_cmd(searchers)
-			panel["on_done"](1)
+			panel["on_done"](0)
 			self.assertEqual(captured.get("opened"), "http://google.com/search?q=foo%20bar")
+
+		def test_selecting_modify_path_at_last_index(self):
+			"""Selecting the last entry (modify path) opens the input panel — no open_tab call."""
+			searchers = [{"label": "google search", "url": "http://google.com/search?q=", "encoding": "utf-8"}]
+			cmd, captured, panel = self._make_cmd(searchers)
+
+			input_called = {}
+			cmd.view._window = type(
+				"W",
+				(),
+				{"show_input_panel": lambda self, *a, **kw: input_called.setdefault("called", True)},
+			)()
+			panel["on_done"](1)
+			self.assertTrue(input_called.get("called"))
+			self.assertNotIn("opened", captured)
 
 	# =====================================================================
 	# Phase 5 tests: defaults overhaul

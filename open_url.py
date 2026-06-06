@@ -865,22 +865,20 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 		threading.Thread(target=ot, args=(url, browser, browser_path)).start()
 
 	def modify_or_search_action(self, term: str):
-		"""Not a URL and not a local path; prompts user to modify path and looks
-		for it again, or searches for this term using a web searcher.
-		"""
+		"""Not a URL and not a local path; show a quick panel of web_searchers, with ``modify path`` as the last entry."""
 		searchers = self.config["web_searchers"]
-		opts = [f"modify path {term}"]
-		opts += [f'{s["label"]} ({term})' for s in searchers]
+		opts = [f'{s["label"]} ({term})' for s in searchers]
+		opts.append(f"modify path ({term})")
 		sublime.active_window().show_quick_panel(opts, lambda idx: self.modify_or_search_done(idx, searchers, term))
 
 	def modify_or_search_done(self, idx: int, searchers, term: str):
-		"""Quick-panel callback for ``modify_or_search_action``: edit the term, or run a chosen web_searcher."""
+		"""Quick-panel callback for ``modify_or_search_action``: run a chosen web_searcher, or edit the term (last entry)."""
 		if idx < 0:
 			return
-		if idx == 0:
+		if idx >= len(searchers):
+			# last entry: modify path
 			self.view.window().show_input_panel("URL or path:", term, self.url_search_modified, None, None)
 			return
-		idx -= 1
 		searcher = searchers[idx]
 		self.open_tab(
 			"{}{}".format(
