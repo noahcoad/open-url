@@ -1035,6 +1035,46 @@ if "sublime" not in sys.modules:
 			"""Visible when set."""
 			self.assertTrue(self._make_cmd("echo {path}"))
 
+	class TestPathHopCount(unittest.TestCase):
+		def test_tilde_counts_as_one_hop(self):
+			"""Leading ~ is one segment."""
+			self.assertEqual(open_url.path_hop_count("~/a/b/c"), 4)
+
+		def test_dotdot_counts_as_one_hop_each(self):
+			"""Each .. is one segment."""
+			self.assertEqual(open_url.path_hop_count("../../x/y"), 4)
+
+		def test_ignores_empty_and_dot_segments(self):
+			"""Leading/trailing slashes and . segments don't count."""
+			self.assertEqual(open_url.path_hop_count("/a//b/./c/"), 3)
+
+		def test_backslash_separators(self):
+			"""Windows-style separators split too."""
+			self.assertEqual(open_url.path_hop_count("a\\b\\c"), 3)
+
+	class TestSelectShortestPathForm(unittest.TestCase):
+		def test_guam_case_prefers_tilde_over_dotdot_chain(self):
+			"""The regression case: fewer hops wins even when the chain is shorter by chars."""
+			rel = "../../../../../../OneDrive-amazon.com/qcst/GUAM Quick Fit Assessment.docx"
+			tilde = "~/Library/CloudStorage/OneDrive-amazon.com/qcst/GUAM Quick Fit Assessment.docx"
+			self.assertEqual(open_url.select_shortest_path_form(rel, tilde), tilde)
+
+		def test_sibling_dir_prefers_relative(self):
+			"""Nearby file: relative has fewer hops than tilde."""
+			rel = "b/y.md"
+			tilde = "~/a/b/y.md"
+			self.assertEqual(open_url.select_shortest_path_form(rel, tilde), rel)
+
+		def test_one_up_prefers_relative(self):
+			"""One directory up still favors relative."""
+			rel = "../z.md"
+			tilde = "~/a/z.md"
+			self.assertEqual(open_url.select_shortest_path_form(rel, tilde), rel)
+
+		def test_length_breaks_hop_ties(self):
+			"""Equal hop counts fall back to character length."""
+			self.assertEqual(open_url.select_shortest_path_form("aaaa/bb", "a/b"), "a/b")
+
 	# =====================================================================
 	# autoactions + sentinel commands + opener fields
 	# =====================================================================

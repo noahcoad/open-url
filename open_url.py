@@ -1200,8 +1200,32 @@ class CopyTransformedPathCommand(sublime_plugin.TextCommand):
 		return bool(_settings_obj().get("copy_path_transform", ""))
 
 
+def path_hop_count(path: str) -> int:
+	"""Count path segments in ``path``; each ``..`` or ``~`` counts as one hop.
+
+	Used to rank candidate path forms: fewer hops reads as "closer" regardless
+	of character length, so ``~/a/b/c`` (4 hops) beats ``../../../../../a/b/c``
+	(8 hops). Empty segments and ``.`` (from leading/trailing or doubled
+	separators) are ignored.
+	"""
+	segments = path.replace("\\", "/").split("/")
+	return sum(1 for s in segments if s and s != ".")
+
+
+def select_shortest_path_form(*candidates: str) -> str:
+	"""Pick the most readable of several equivalent path forms.
+
+	Ranks by (hop count, then character length): the form with the fewest path
+	segments wins, so a ``~/...`` form beats a long ``../../..`` chain even when
+	the chain has fewer characters. Length breaks ties; the first candidate wins
+	on a full tie.
+	"""
+	return min(candidates, key=lambda p: (path_hop_count(p), len(p)))
+
+
 class PasteRelativePathCommand(sublime_plugin.TextCommand):
-	"""Paste clipboard path, converted to whichever is shortest of:
+	"""Paste clipboard path, converted to whichever has the fewest path segments
+	(character length as tiebreak) of:
 	- relative path from current file (with symlinks resolved on both sides)
 	- tilde-shortened path (~/...)
 	- the absolute expansion as-is
@@ -1256,15 +1280,7 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 		except ValueError:
 			rel_path = abs_path
 
-		try:
-			home_real = os.path.realpath(home)
-			common_ancestor = os.path.commonpath([current_dir, abs_path])
-			if common_ancestor == home_real:
-				result = tilde_path + loc_suffix
-			else:
-				result = min(rel_path, tilde_path, key=len) + loc_suffix
-		except ValueError:
-			result = min(rel_path, tilde_path, key=len) + loc_suffix
+		result = select_shortest_path_form(rel_path, tilde_path) + loc_suffix
 
 		is_markdown = False
 		if config.get("paste_relative_path_markdown_backticks", True):
