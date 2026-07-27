@@ -359,6 +359,9 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 					scanned = self._scan_line_for_url(sel0.begin())
 					if scanned:
 						u = scanned
+				if not u:
+					sublime.message_dialog("Nothing selected to open. Select or place cursor over text, link, or file then run command again.")
+					return
 				urls = [u]
 
 		if len(urls) > 1:
@@ -1223,6 +1226,30 @@ def select_shortest_path_form(*candidates: str) -> str:
 	return min(candidates, key=lambda p: (path_hop_count(p), len(p)))
 
 
+# Chars that terminate a token in OpenUrlCommand.find_selection (minus the quote
+# chars, which it treats as enclosing pairs). If a pasted path contains any of
+# these it won't re-select as one token later, so we wrap it in a quote.
+_RESELECTION_BREAKERS = frozenset("\t <>,[]()")
+
+
+def wrap_for_reselection(text: str) -> str:
+	"""Wrap ``text`` in a quote char if it contains chars that would break re-selection.
+
+	find_selection() stops token expansion at whitespace, brackets, angle/comma,
+	and quote chars — so a pasted deep link containing e.g. an apostrophe (from a
+	regex like ``team's``) or a space can't be re-selected whole. Wrapping in a
+	quote lets find_selection's enclosing-pair branch grab it in one shot. Picks a
+	quote char (", ', then `) not already present in the content; if all three
+	appear, returns the text unwrapped.
+	"""
+	if not (_RESELECTION_BREAKERS & set(text) or any(q in text for q in "\"'`")):
+		return text
+	for q in ('"', "'", "`"):
+		if q not in text:
+			return q + text + q
+	return text
+
+
 class PasteRelativePathCommand(sublime_plugin.TextCommand):
 	"""Paste clipboard path, converted to whichever has the fewest path segments
 	(character length as tiebreak) of:
@@ -1232,7 +1259,9 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 
 	web URLs (containing ``://``) are pasted as-is. Markdown views auto-wrap
 	pastes in backticks (controlled by ``paste_relative_path_markdown_backticks``).
-	Paths containing spaces are wrapped in double quotes when not in markdown.
+	Outside markdown, results containing chars that would break token re-selection
+	(spaces, apostrophes, brackets, etc.) are wrapped in a quote via
+	``wrap_for_reselection``.
 	"""
 
 	def run(self, edit) -> None:
@@ -1288,8 +1317,8 @@ class PasteRelativePathCommand(sublime_plugin.TextCommand):
 			if syntax and "markdown" in syntax.lower():
 				is_markdown = True
 				result = "`" + result + "`"
-		if not is_markdown and " " in result:
-			result = '"' + result + '"'
+		if not is_markdown:
+			result = wrap_for_reselection(result)
 
 		regions = list(self.view.sel())
 		self.view.sel().clear()

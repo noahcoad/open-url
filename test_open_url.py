@@ -1075,6 +1075,32 @@ if "sublime" not in sys.modules:
 			"""Equal hop counts fall back to character length."""
 			self.assertEqual(open_url.select_shortest_path_form("aaaa/bb", "a/b"), "a/b")
 
+	class TestWrapForReselection(unittest.TestCase):
+		def test_plain_path_unwrapped(self):
+			"""No re-selection-breaking chars: leave the path bare."""
+			self.assertEqual(open_url.wrap_for_reselection("~/a/b/c.txt"), "~/a/b/c.txt")
+
+		def test_space_wraps_in_double_quotes(self):
+			"""A space still wraps in double quotes (prior behavior)."""
+			self.assertEqual(open_url.wrap_for_reselection("a/b c.txt"), '"a/b c.txt"')
+
+		def test_apostrophe_wraps_in_double_quotes(self):
+			"""The regression: apostrophe in a deep link wraps so it re-selects as one token."""
+			link = "ideas.txt:4:/^catalog our team's projects/"
+			self.assertEqual(open_url.wrap_for_reselection(link), '"' + link + '"')
+
+		def test_other_terminators_wrap(self):
+			"""Any find_selection terminator triggers wrapping."""
+			for ch in list("`><,[]()"):
+				self.assertEqual(open_url.wrap_for_reselection("a" + ch + "b"), '"a' + ch + 'b"')
+
+		def test_avoids_quote_char_present_in_content(self):
+			"""Pick a quote char not already in the content so it re-selects cleanly."""
+			# contains a double quote -> fall back to single quote
+			self.assertEqual(open_url.wrap_for_reselection('say "hi" now'), "'say \"hi\" now'")
+			# contains both " and ' -> fall back to backtick
+			self.assertEqual(open_url.wrap_for_reselection('a "b" \'c\' d'), "`a \"b\" 'c' d`")
+
 	# =====================================================================
 	# autoactions + sentinel commands + opener fields
 	# =====================================================================

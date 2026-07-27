@@ -258,7 +258,7 @@ Behavior:
 - `file://...` URIs are stripped first.
 - Deep-link suffixes (`:42`, `:/regex/`, etc.) are preserved.
 - In Markdown views, the result is wrapped in backticks (controlled by `paste_relative_path_markdown_backticks`).
-- In non-Markdown views, paths containing spaces are wrapped in double quotes.
+- In non-Markdown views, results containing chars that would break re-selection (spaces, apostrophes, brackets, angle brackets, commas) are wrapped in a quote — `"`, else `'`, else `` ` `` — so the pasted link re-selects as one token.
 
 ## Settings reference
 
