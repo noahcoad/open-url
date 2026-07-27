@@ -1,23 +1,9 @@
 [
-  {
-    "caption": "Open URL: Settings",
-    "command": "edit_settings",
-    "args": {
-      "base_file": "${packages}/Open URL/open_url.sublime-settings",
-      "default": "// settings in here override those in \"Open URL/open_url.sublime-settings\",\n\n{\n\t$0\n}\n"
-    }
-  },
-
-  { "caption": "Open URL", "command": "open_url" },
-
-  {
-    "caption": "Open URL (Skip Menu)",
-    "command": "open_url",
-    "args": { "show_menu": false }
-  },
-  {
-    "caption": "Open URL (Use Input)",
-    "command": "open_url",
-    "args": { "show_input": true }
-  }
+  { "caption": "Open URL",                        "command": "open_url" },
+  { "caption": "Open URL: Select URL",            "command": "select_url" },
+  { "caption": "Open URL: Skip Menu",             "command": "open_url",       "args": { "show_menu": false } },
+  { "caption": "Open URL: Use Input",             "command": "open_url",       "args": { "show_input": true } },
+  { "caption": "Open URL: Copy Deep Link",        "command": "copy_deep_link" },
+  { "caption": "Open URL: Copy Transformed Path", "command": "copy_transformed_path" },
+  { "caption": "Open URL: Paste Relative Path",   "command": "paste_relative_path" }
 ]

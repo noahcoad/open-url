@@ -29,16 +29,19 @@
     }
   ],
 
+  // when true, deep links only support line numbers (file:42), not :"text" or :/regex/
+  "deep_link_line_number_only": false,
+
+  // optional shell command run by Copy Deep Link / Copy Transformed Path; {path} is replaced with
+  // the current file's path (shell-quoted), and the command's stdout becomes the new path.
+  // example: "/opt/homebrew/bin/python3 ~/scripts/clipfix.py --input text --output stdout {path}"
+  "copy_path_transform": "",
+
+  // when pasting a relative path into a markdown file, wrap the result in backticks
+  "paste_relative_path_markdown_backticks": true,
+
   // path transforms — applied in order: aliases → search_paths × file_prefixes × file_suffixes
   // first combination that resolves to an existing file or folder wins.
-
-  // string substitutions applied to the selected text before path resolution.
-  // useful for short tokens you type often, e.g. "@db/users" → "src/db/models/users".
-  // example:
-  // "aliases": {
-  //   "@db": "src/db/models",
-  //   "@ui": "frontend/components"
-  // }
   "aliases": {},
 
   // directory roots tried as prefixes when resolving a bare path.
@@ -60,35 +63,46 @@
   "file_suffixes": [".js"],
 
   // menu actions shown when the resolved path is a file.
-  // each entry: { label, os?, pattern?, commands, kwargs? }
-  //   label    — text shown in the quick panel
-  //   os       — optional: "osx" | "windows" | "linux"; entry only shows on this OS
-  //   pattern  — optional: regex; entry only shows when path matches (e.g. "\\.py$")
-  //   commands — argv array; the file path is appended as the last arg
-  //   kwargs   — optional: passed to subprocess.Popen (e.g. {"shell": true})
-  // example: open Python files in VS Code
-  //   { "label": "edit in VS Code", "os": "osx", "pattern": "\\.py$", "commands": ["code"] }
+  // each entry: { label, os?, pattern?, commands, kwargs?, terminal?, pause?, pre_command? }
+  // the "commands" field accepts:
+  //   - an array (argv; the path is appended unless an element contains "$url")
+  //   - a string (run via shell; "$url" replaced or path appended)
+  //   - a reserved sentinel: "edit_in_sublime", "open_in_new_window", "system_open", "add_to_project"
+  // Note: a synthetic "edit" entry is always prepended to this list at runtime,
+  // which opens the file in Sublime (honoring any deep-link suffix). No need to
+  // include it here.
   "file_custom_commands": [
-    // reveal in Finder/Explorer (selects the file)
-    { "label": "reveal", "os": "osx", "commands": ["open", "-R"] },
+    { "label": "reveal", "os": "osx",     "commands": ["open", "-R"] },
     { "label": "reveal", "os": "windows", "commands": ["explorer", "/select,"] },
-    { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
-
-    // open with the system-default app for that file type
-    { "label": "open with default application", "os": "osx", "commands": ["open"] },
-    { "label": "open with default application", "os": "windows", "commands": ["start"], "kwargs": { "shell": true } },
-    { "label": "open with default application", "os": "linux", "commands": [] }
+    { "label": "reveal", "os": "linux",   "commands": ["nautilus", "--browser"] },
+    { "label": "new window",          "commands": "open_in_new_window" },
+    { "label": "system open",         "commands": "system_open" }
   ],
 
-  // pass folder that matches regex "pattern" to shell commands
+  // menu actions shown when the resolved path is a folder
   "folder_custom_commands": [
-
-  	// open folder in os file system manager
-    { "label": "reveal", "os": "osx", "commands": ["open"] },
+    { "label": "new window",          "commands": "open_in_new_window" },
+    { "label": "reveal", "os": "osx",     "commands": ["open"] },
     { "label": "reveal", "os": "windows", "commands": ["explorer"] },
-    { "label": "reveal", "os": "linux", "commands": ["nautilus", "--browser"] },
-
-    // open folder in a new sublime window
-    { "label": "open in new window", "os": "osx", "commands": ["/usr/local/bin/subl"] }
+    { "label": "reveal", "os": "linux",   "commands": ["nautilus", "--browser"] },
+    { "label": "add to project",      "commands": "add_to_project" }
   ],
+
+  // menu actions for non-file/non-folder text that doesn't look like a URL
+  "other_custom_commands": [],
+
+  // list of regex/extension matchers that pre-select a file or folder action.
+  // each entry: { os?, pattern? | endswith?, label, action }
+  //   os       — "osx" | "windows" | "linux" (omit = all)
+  //   pattern  — regex; matches against the resolved path
+  //   endswith — array of extensions (e.g. [".sh"]); shorthand for pattern
+  //   label    — matches a label in *_custom_commands; or a built-in name
+  //   action   — "auto" (skip menu) | "menu" (pre-highlight)
+  "autoactions": [
+    { "os": "windows", "endswith": [".exe", ".com"], "label": "system open", "action": "auto" },
+    { "os": "windows", "endswith": [".bat", ".cmd"], "label": "system open", "action": "menu" },
+    { "endswith": [".sublime-project"],              "label": "edit",        "action": "auto" },
+    { "endswith": [".txt", ".md", ".log", ".config", ".sublime-settings"],
+      "label": "edit", "action": "auto" }
+  ]
 }

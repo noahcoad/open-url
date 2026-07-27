@@ -1,15 +1,37 @@
 [
   {
-    "keys": [
-      "ctrl+u"
-    ],
+    "keys": ["ctrl+u"],
     "command": "open_url",
     "context": [
-      {
-        "key": "setting.open_url.disable_default_key_bindings",
-        "operator": "not_equal",
-        "operand": true
-      }
+      { "key": "setting.open_url.disable_default_key_bindings", "operator": "not_equal", "operand": true }
+    ]
+  },
+  {
+    "keys": ["ctrl+shift+u"],
+    "command": "select_url",
+    "context": [
+      { "key": "setting.open_url.disable_default_key_bindings", "operator": "not_equal", "operand": true }
+    ]
+  },
+  {
+    "keys": ["ctrl+alt+shift+u"],
+    "command": "copy_deep_link",
+    "context": [
+      { "key": "setting.open_url.disable_default_key_bindings", "operator": "not_equal", "operand": true }
+    ]
+  },
+  {
+    "keys": ["ctrl+alt+v"],
+    "command": "paste_relative_path",
+    "context": [
+      { "key": "setting.open_url.disable_default_key_bindings", "operator": "not_equal", "operand": true }
+    ]
+  },
+  {
+    "keys": ["ctrl+alt+shift+c"],
+    "command": "copy_transformed_path",
+    "context": [
+      { "key": "setting.open_url.disable_default_key_bindings", "operator": "not_equal", "operand": true }
     ]
   }
 ]

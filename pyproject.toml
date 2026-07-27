@@ -1,3 +1,3 @@
-[tool.black]
-line-length = 120
-target-version = ['py38']
+[tool.isort]
+indent = "\t"
+line_length = 120
