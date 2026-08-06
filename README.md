@@ -86,6 +86,8 @@ Open URL recognizes "deep link" suffixes attached to a path with a colon, so you
 
 The combined `:LINE:/regex/` form is what **Copy Deep Link** generates by default. The line number anchors the navigation; the regex (or quoted text) is a hint that improves precision when lines have shifted.
 
+In generated regexes, words are joined by a literal space for readability. Leading indentation becomes `^\s*` (so re-indenting the line doesn't break the anchor), and a gap that isn't a single plain space — a tab, or a run of spaces — becomes `\s+`.
+
 ### Copy Deep Link output
 
 | Cursor / selection state | Copies |
@@ -239,7 +241,7 @@ If you set `copy_path_transform` to a shell command, **Open URL: Copy Transforme
 `{path}` in the template is replaced with the shell-quoted file path; the command's stdout becomes the new path. If the command exits non-zero, Open URL shows the error in the status bar and doesn't touch the clipboard.
 
 ```json
-"copy_path_transform": "/opt/homebrew/bin/python3 ~/scripts/clipfix.py --input text --output stdout {path}"
+"copy_path_transform": "/opt/homebrew/bin/python3 ~/scripts/shortpath.py {path}"
 ```
 
 The **Copy Transformed Path** palette entry is hidden when `copy_path_transform` is unset, so it doesn't clutter the palette unless you've configured it.
@@ -314,7 +316,7 @@ Add `"open_url.disable_default_key_bindings": true` to your User `Preferences.su
 Tests run in plain Python (no Sublime Text instance required):
 
 ```sh
-python3 test_open_url.py
+py test_open_url.py
 ```
 
 The pre-push hook runs `isort`, `black`, `flake8`, `pyright`, and the test suite.

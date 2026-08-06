@@ -565,6 +565,40 @@ if "sublime" not in sys.modules:
 			"""Returns last valid colon."""
 			self.assertEqual(find_loc_sep("a:b:42"), 3)
 
+		# A ':' inside a regex/search body must not win the backward scan — the
+		# suffix has to be a *complete* location, not merely start like one.
+		def test_regex_body_ending_in_colon(self):
+			"""A trailing ':' inside the regex (python def/if) is not a separator."""
+			self.assertEqual(find_loc_sep(r"f.py:1:/^def foo\(x\):/"), 6)
+
+		def test_regex_body_containing_colon(self):
+			"""A ':' mid-regex (yaml key) is not a separator."""
+			self.assertEqual(find_loc_sep("f.md:1:/^key: value/"), 6)
+
+		def test_regex_body_containing_colon_digits(self):
+			"""A ':42' inside the regex body is not a separator."""
+			self.assertEqual(find_loc_sep("f.md:1:/^foo:42/"), 6)
+
+		def test_search_body_containing_colon(self):
+			"""A ':' inside quoted search text is not a separator."""
+			self.assertEqual(find_loc_sep('f.md:1:"foo: bar"'), 6)
+
+		def test_unterminated_regex_is_not_a_suffix(self):
+			"""An unclosed '/regex' is not a valid suffix."""
+			self.assertEqual(find_loc_sep("f.md:/^foo"), -1)
+
+		def test_unterminated_search_is_not_a_suffix(self):
+			"""An unclosed '\"text' is not a valid suffix."""
+			self.assertEqual(find_loc_sep('f.md:"foo'), -1)
+
+		def test_range_form_is_a_suffix(self):
+			"""The N-M range form is still recognized."""
+			self.assertEqual(find_loc_sep("f.md:120-180"), 4)
+
+		def test_trailing_garbage_after_digits_is_not_a_suffix(self):
+			"""Digits followed by non-digits are not a line number."""
+			self.assertEqual(find_loc_sep("f.md:42abc"), -1)
+
 		def test_yaml_cases(self):
 			"""Yaml cases."""
 			for c in _CASES.get("loc_sep_cases", []):
@@ -974,6 +1008,84 @@ if "sublime" not in sys.modules:
 						_expand(c["text"], cursor=c.get("cursor"), selection=c.get("selection")),
 						c["expected"],
 					)
+
+		# Deep links whose regex/search body contains spaces and quotes: neither the
+		# enclosing-quote branch nor the plain token walk can span those on its own.
+		_SPACEY_LINK = 'stream.md:6:/^# 2026-08-05 "The Containment Brothers"/'
+
+		def test_spacey_deep_link_selects_whole_token_from_any_cursor(self):
+			"""Every cursor position inside a spaced/quoted deep link selects the whole link."""
+			link = self._SPACEY_LINK
+			for col in range(len(link) + 1):
+				with self.subTest(col=col, char=link[col] if col < len(link) else "<eol>"):
+					self.assertEqual(_expand(link, col), link)
+
+		def test_spacey_deep_link_cursor_inside_quoted_words(self):
+			"""Cursor inside the quoted part must not collapse to just the quoted text."""
+			link = self._SPACEY_LINK
+			self.assertEqual(_expand(link, 41), link)  # inside "Containment"
+
+		def test_spacey_deep_link_in_surrounding_context(self):
+			"""The link is found with prose, wrappers, or a second link around it."""
+			link = self._SPACEY_LINK
+			for label, text, col in (
+				("prose before", "see " + link, 4 + 30),
+				("prose after", link + " for context", 30),
+				("backticks", "`" + link + "`", 1 + 30),
+				("double quotes", '"' + link + '"', 1 + 30),
+				("markdown link", "- [x](" + link + ")", 6 + 30),
+				("second line", "first\n" + link, 6 + 30),
+				("two links", link + " and " + link, len(link) + 5 + 30),
+			):
+				with self.subTest(label):
+					self.assertEqual(_expand(text, col), link)
+
+		def test_deep_link_with_trailing_colon_in_regex(self):
+			"""A regex body ending in ':' (python def/if, yaml key) selects whole."""
+			link = "/tmp/f.py:12:/^def foo\\(x\\):/"
+			self.assertEqual(_expand(link, 20), link)
+
+		def test_deep_link_search_form_with_space(self):
+			"""The :LINE:"text" form with a space selects whole."""
+			link = '/tmp/f.md:3:"hello world"'
+			self.assertEqual(_expand(link, 18), link)
+
+		def test_url_not_treated_as_deep_link_token(self):
+			"""A web URL must not be captured by the deep-link span matcher."""
+			self.assertEqual(_expand("http://example.com", 5), "http://example.com")
+
+	class TestFindDeepLinkSpan(unittest.TestCase):
+		"""Unit-level coverage for the deep-link token span matcher."""
+
+		def test_finds_span_containing_cursor(self):
+			"""Finds span containing cursor."""
+			line = 'a.md:6:/^# x "y z"/'
+			self.assertEqual(open_url.find_deep_link_span(line, 12), (0, len(line)))
+
+		def test_returns_none_outside_token(self):
+			"""Cursor in unrelated prose yields no span."""
+			line = "some prose here"
+			self.assertIsNone(open_url.find_deep_link_span(line, 5))
+
+		def test_returns_none_for_web_url(self):
+			"""Web URLs are never deep-link tokens."""
+			self.assertIsNone(open_url.find_deep_link_span("http://example.com", 5))
+
+		def test_returns_none_for_sharepoint_colon_url(self):
+			"""SharePoint ':x:/s/' URLs must not match."""
+			line = "https://amazon.sharepoint.com/:x:/s/Intuit/IQCQ?e=X0EnJ3"
+			self.assertIsNone(open_url.find_deep_link_span(line, 33))
+
+		def test_picks_the_token_under_the_cursor(self):
+			"""With two links on a line, the cursor's own token wins."""
+			a, b = 'x.md:1:/^a b/', 'y.md:2:/^c d/'
+			line = a + " " + b
+			self.assertEqual(open_url.find_deep_link_span(line, 2), (0, len(a)))
+			self.assertEqual(open_url.find_deep_link_span(line, len(a) + 3), (len(a) + 1, len(line)))
+
+		def test_no_span_for_line_number_only_link(self):
+			"""Line-only links need no span matcher (the token walk handles them)."""
+			self.assertIsNone(open_url.find_deep_link_span("file.py:42", 5))
 
 	class TestSelectionMethod(unittest.TestCase):
 		def test_strips_surrounding_whitespace(self):
@@ -1654,6 +1766,41 @@ if "sublime" not in sys.modules:
 			# combined form: file:LINE:/regex/
 			self.assertTrue(link.startswith("/tmp/foo.md:1:/^"))
 
+		def test_regex_joins_words_with_literal_space(self):
+			"""Single spaces stay literal so the link reads cleanly."""
+			link = self._run('# 2026 "The Brothers"\nnext', cursor=0)
+			self.assertEqual(link, '/tmp/foo.md:1:/^# 2026 "The Brothers"/')
+
+		def test_regex_uses_backslash_s_for_non_single_space_gaps(self):
+			"""Tabs and multi-space runs become \\s+ (a literal space wouldn't match)."""
+			link = self._run("a\tb  c\nnext", cursor=0)
+			self.assertEqual(link, "/tmp/foo.md:1:/^a\\s+b\\s+c/")
+
+		def test_regex_indent_prefix_tolerates_reindent(self):
+			"""Leading indentation becomes ^\\s* rather than literal whitespace."""
+			link = self._run("\t\tfoo bar\nnext", cursor=2)
+			self.assertEqual(link, "/tmp/foo.md:1:/^\\s*foo bar/")
+
+		def test_generated_regex_matches_its_own_line(self):
+			"""Whatever we emit must match the line it was copied from."""
+			for text in (
+				'# 2026-08-05 "The Containment Brothers"',
+				"hello world foo bar baz qux",
+				"\t\tindented line here with words",
+				"a.b*c  d",
+				"team's   plan | next?",
+				"| `col` | `false` | When true",
+				"one\ttwo three four five",
+				"single",
+			):
+				with self.subTest(text=text):
+					link = self._run(text + "\nnext", cursor=len(text))
+					_, loc = parse_file_location(link)
+					self.assertIsNotNone(loc, "link did not parse: %s" % link)
+					if loc["type"] != "regex":
+						continue
+					self.assertRegex(text, loc["value"])
+
 		def test_text_selected_uses_search(self):
 			"""Text selected uses search."""
 			link = self._run("hello world\nfoo bar", selection=(0, 5))
@@ -1669,6 +1816,33 @@ if "sublime" not in sys.modules:
 			"""Line only blank line still emits line number."""
 			link = self._run("a\n\nb", cursor=2, line_only=True)
 			self.assertEqual(link, "/tmp/foo.md:2")
+
+		def test_copied_link_round_trips_through_parse_and_reselect(self):
+			"""A copied link must parse back AND re-select from any cursor position.
+
+			Covers the end-to-end path a real user hits: copy the link, paste it
+			somewhere, put the cursor in it, run Open URL.
+			"""
+			for text in (
+				'# 2026-08-05 "The Containment Brothers"',
+				"def parse_file_location(text):",
+				"key: value here",
+				"if x:",
+				"a.b*c  d",
+				"team's   plan | next?",
+				"hello world foo bar baz qux",
+				"\t\tindented line here with words",
+			):
+				with self.subTest(text=text):
+					link = self._run(text + "\nnext", cursor=len(text))
+					path, loc = parse_file_location(link)
+					self.assertIsNotNone(loc, "did not parse: %s" % link)
+					self.assertEqual(path, "/tmp/foo.md")
+					if loc["type"] == "regex":
+						self.assertRegex(text, loc["value"])
+					# re-selection: cursor anywhere in the pasted link grabs all of it
+					for col in (0, len(link) // 2, len(link) - 1):
+						self.assertEqual(_expand(link, col), link, "col %d of %s" % (col, link))
 
 		def test_legacy_line_only_form_parses(self):
 			# Just :42 — the original form, no regex / no search

@@ -34,7 +34,7 @@
 
   // optional shell command run by Copy Deep Link / Copy Transformed Path; {path} is replaced with
   // the current file's path (shell-quoted), and the command's stdout becomes the new path.
-  // example: "/opt/homebrew/bin/python3 ~/scripts/clipfix.py --input text --output stdout {path}"
+  // example: "/opt/homebrew/bin/python3 ~/scripts/shortpath.py {path}"
   "copy_path_transform": "",
 
   // when pasting a relative path into a markdown file, wrap the result in backticks

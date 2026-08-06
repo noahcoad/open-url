@@ -22,6 +22,18 @@ selection_cases:
   - {label: abs-path-search,    text: '/Users/ncoad/notes.txt:"change log"', cursor: 5,
      expected: '/Users/ncoad/notes.txt:"change log"'}
 
+  # deep links whose regex/search body holds spaces and quotes
+  - {label: deep-link-spacey-start, text: 'stream.md:6:/^# 2026-08-05 "The Containment Brothers"/', cursor: 0,
+     expected: 'stream.md:6:/^# 2026-08-05 "The Containment Brothers"/'}
+  - {label: deep-link-spacey-in-quotes, text: 'stream.md:6:/^# 2026-08-05 "The Containment Brothers"/', cursor: 41,
+     expected: 'stream.md:6:/^# 2026-08-05 "The Containment Brothers"/'}
+  - {label: deep-link-spacey-in-prose, text: 'see stream.md:6:/^# 2026-08-05 "The Containment Brothers"/ now', cursor: 34,
+     expected: 'stream.md:6:/^# 2026-08-05 "The Containment Brothers"/'}
+  - {label: deep-link-regex-trailing-colon, text: '/tmp/f.py:12:/^def foo\(x\):/', cursor: 20,
+     expected: '/tmp/f.py:12:/^def foo\(x\):/'}
+  - {label: deep-link-search-space, text: '/tmp/f.md:3:"hello world"', cursor: 18,
+     expected: '/tmp/f.md:3:"hello world"'}
+
   # cursor in surrounding text
   - {label: url-mid-sentence,   text: "boo google.com hoo",          cursor: 6, expected: "google.com"}
   - {label: word-at-cursor,     text: "love dog",                    cursor: 2, expected: "love"}     # cursor inside "love"
@@ -66,6 +78,15 @@ loc_sep_cases:
   - {label: line-only-ok,       text: "file.py:42",       expected: 7,  line_number_only: true}
   - {label: line-only-skip-str, text: 'file.py:"text"',   expected: -1, line_number_only: true}
   - {label: line-only-skip-re,  text: "file.py:/pat/",    expected: -1, line_number_only: true}
+  # a ':' inside a regex/search body must not win the backward scan
+  - {label: re-trailing-colon,  text: 'f.py:1:/^def foo\(x\):/', expected: 6}
+  - {label: re-inner-colon,     text: "f.md:1:/^key: value/",    expected: 6}
+  - {label: re-inner-colon-num, text: "f.md:1:/^foo:42/",        expected: 6}
+  - {label: str-inner-colon,    text: 'f.md:1:"foo: bar"',       expected: 6}
+  - {label: re-unterminated,    text: "f.md:/^foo",              expected: -1}
+  - {label: str-unterminated,   text: 'f.md:"foo',               expected: -1}
+  - {label: range-form,         text: "f.md:120-180",            expected: 4}
+  - {label: digits-then-junk,   text: "f.md:42abc",              expected: -1}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _scan_line_for_url cases

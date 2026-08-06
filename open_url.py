@@ -10,6 +10,7 @@ Public commands (registered with Sublime Text):
 Module entry points:
 	OpenUrlCommand.run / handle  — the resolution cascade (file -> folder -> web URL -> custom -> search)
 	parse_file_location          — splits ``path:LINE`` / ``:"text"`` / ``:/regex/`` / ``:N-M`` deep links
+	find_deep_link_span          — locates a deep-link token (spaces/quotes and all) under the cursor
 	apply_path_transform         — runs the ``copy_path_transform`` shell command
 	select_default_opener        — autoaction matcher for ``file_custom_commands`` / ``folder_custom_commands``
 
@@ -171,18 +172,51 @@ def find_loc_sep(text: str, line_number_only: bool = False) -> int:
 	Returns the index of the ':', or -1 if not found. The next char must be a
 	digit (line number), or — unless line_number_only — '"' (search) or
 	'/' not followed by another '/' (regex; avoids matching '://' in URLs).
+
+	The whole remainder must be a *complete* suffix, not just start like one:
+	digits form a bare line number or N-M range, and bracketed forms close at
+	the very end. Otherwise a ':' inside a regex/search body would win the
+	backward scan — e.g. ``f.py:1:/^def foo\\(x\\):/`` (line ends in a colon)
+	or ``f.py:1:/^foo:42/``.
 	"""
 	for i in range(len(text) - 1, 0, -1):
-		if text[i] == ":" and i + 1 < len(text):
-			nxt = text[i + 1]
-			if nxt.isdigit():
+		if text[i] != ":" or i + 1 >= len(text):
+			continue
+		suffix = text[i + 1 :]
+		nxt = suffix[0]
+		if nxt.isdigit():
+			if suffix.isdigit() or _RANGE_RE.match(suffix):
 				return i
-			if not line_number_only:
-				if nxt == '"':
-					return i
-				if nxt == "/" and (i + 2 >= len(text) or text[i + 2] != "/"):
-					return i
+			continue
+		if line_number_only:
+			continue
+		if nxt == '"' and len(suffix) >= 2 and suffix.endswith('"'):
+			return i
+		if nxt == "/" and len(suffix) >= 2 and suffix.endswith("/") and suffix[1] != "/":
+			return i
 	return -1
+
+
+def find_deep_link_span(line: str, col: int) -> tuple[int, int] | None:
+	"""Find a bracketed deep-link token in ``line`` whose span contains ``col``.
+
+	Handles ``path:N:/regex/`` and ``path:N:"text"`` where the body may contain
+	spaces and quote chars — neither the enclosing-quote branch nor the plain
+	token walk in ``find_selection`` can span those. Returns ``(start, end)``
+	character offsets, or None when the cursor isn't inside such a token.
+	"""
+	for match in _DEEP_LINK_TOKEN_RE.finditer(line):
+		start, end = match.span()
+		if start <= col <= end and "://" not in match.group(0):
+			return (start, end)
+	return None
+
+
+# path (no whitespace) + optional :N + :/regex/ or :"text"; body may hold spaces/quotes.
+# Body must be non-empty and not start with '/', so a URL's '://' can't match.
+_DEEP_LINK_TOKEN_RE = re.compile(
+	r"""(?<![^\s"'`<,\[\](])[^\s"'`<>,\[\]()]+?(?::\d+)?:(?:/(?!/)(?:[^/\\]|\\.)+/|"(?:[^"\\]|\\.)+")"""
+)
 
 
 def match_openers(openers: list[dict], url: str) -> list[dict]:
@@ -464,6 +498,13 @@ class OpenUrlCommand(sublime_plugin.TextCommand):
 
 		view_size = self.view.size()
 		terminator = list("\t\"'`><, []()")
+
+		# A deep link whose regex/search body holds spaces or quotes can't be found by
+		# either branch below, so match the whole token on the line first.
+		line_region = self.view.line(start)
+		span = find_deep_link_span(self.view.substr(line_region), start - line_region.begin())
+		if span is not None:
+			return sublime.Region(line_region.begin() + span[0], line_region.begin() + span[1])
 
 		# If cursor is inside an enclosing quote/backtick, expand to the matching pair.
 		found_enclosing = False
@@ -1125,7 +1166,8 @@ class CopyDeepLinkCommand(sublime_plugin.TextCommand):
 
 	Output forms based on selection state:
 	  - text selected      → file_path:LINE:"selected text"
-	  - empty + non-blank  → file_path:LINE:/^first five words/   (regex anchor)
+	  - empty + non-blank  → file_path:LINE:/^first five words/   (regex anchor,
+	    words joined by a literal space; non-single-space gaps become \\s+)
 	  - empty + blank line → file_path:LINE                       (line number only)
 	The line-number hint is included with regex/search forms so navigation
 	can prefer the match nearest that line when the pattern is ambiguous.
@@ -1169,7 +1211,12 @@ class CopyDeepLinkCommand(sublime_plugin.TextCommand):
 				has_leading = line_raw != line_raw.lstrip()
 				words = line_text.split()[:5]
 				escaped_words = [re.sub(r"([.^$*+?{}[\]\\|()/])", r"\\\1", w) for w in words]
-				escaped = r"\s+".join(escaped_words)
+				# Keep single spaces literal so the link stays readable; only gaps that
+				# aren't one plain space become \s+ (else the regex wouldn't match its own line).
+				gaps = re.findall(r"\s+", line_text)[: len(words) - 1]
+				escaped = escaped_words[0]
+				for gap, word in zip(gaps, escaped_words[1:]):
+					escaped += (" " if gap == " " else r"\s+") + word
 				prefix = r"^\s*" if has_leading else "^"
 				link = "%s:%d:/%s%s/" % (file_path, line_num, prefix, escaped)
 
