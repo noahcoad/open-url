@@ -1,3 +1,0 @@
-[tool.isort]
-indent = "\t"
-line_length = 120

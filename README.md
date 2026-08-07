@@ -319,7 +319,7 @@ Tests run in plain Python (no Sublime Text instance required):
 py test_open_url.py
 ```
 
-The pre-push hook runs `isort`, `black`, `flake8`, `pyright`, and the test suite.
+The test suite is the only check. Lint and type-check tooling (`isort`, `flake8`, `pyright`) and the `pre-push` hook that ran them were removed — see [docs/removed-dev-tooling.md](docs/removed-dev-tooling.md) to restore them.
 
 If you use `pyenv`, [the `3.8` version](https://www.sublimetext.com/docs/api_environments.html) in `.python-version` won't match a real `pyenv` version directly. Install some `3.8.X` and symlink: `ln -s ~/.pyenv/versions/3.8.X ~/.pyenv/versions/3.8`.
 
